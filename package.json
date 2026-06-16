@@ -59,6 +59,8 @@
   "overrides": {
     "picomatch": "4.0.4",
     "undici": "6.24.0",
-    "vite": "$vite"
+    "vite": "$vite",
+    "protobufjs": "7.6.3",
+    "@babel/core": "7.29.6"
   }
 }
