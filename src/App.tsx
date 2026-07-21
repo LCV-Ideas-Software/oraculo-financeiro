@@ -29,7 +29,7 @@ import {
   taxaEfetivaAnualDoPeriodo,
 } from './lib/finance';
 
-const APP_VERSION = 'APP v01.10.07';
+const APP_VERSION = 'APP v01.10.08';
 
 type TabId = 'lci-lca' | 'tesouro-ipca';
 

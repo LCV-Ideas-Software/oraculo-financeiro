@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [v01.10.08] - 2026-07-21
+
+**Patch de segurança — corrige duas negações de serviço em dependências transitivas.**
+
+### Segurança
+
+- Atualiza o override de `protobufjs` de `7.6.3` para `7.6.5`, corrigindo loop infinito ao analisar opções `.proto` malformadas na cadeia de runtime do `@google/genai` (GHSA-j3f2-48v5-ccww / CVE-2026-59877).
+- Atualiza `brace-expansion` de `5.0.6` para `5.0.7` dentro do intervalo já aceito por `minimatch`, corrigindo expansão exponencial de grupos vazios consecutivos na cadeia de desenvolvimento (GHSA-3jxr-9vmj-r5cp / CVE-2026-13149).
+
 ## [v01.10.07] - 2026-05-15
 
 **Patch — 4-gate quality directive compliance (eslint + biome + prettier + cross-review).** Workspace directive 2026-05-15: every code change must pass eslint + biome + prettier + cross-review before Commit & Sync / tag / release / deploy / publish.
