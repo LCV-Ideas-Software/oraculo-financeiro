@@ -25,7 +25,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "d1:setup": "pwsh -ExecutionPolicy Bypass -File ./scripts/setup-d1.ps1",
-    "d1:migrate": "npx --registry=https://registry.npmjs.org/ --yes wrangler@latest d1 execute bigdata_db --remote --file db/001_init.sql ; npx --registry=https://registry.npmjs.org/ --yes wrangler@latest d1 execute bigdata_db --remote --file db/002_tesouro_ipca_lotes.sql",
+    "d1:migrate": "npx --yes --registry=https://registry.npmjs.org/ wrangler@latest d1 execute bigdata_db --remote --file db/001_init.sql && npx --yes --registry=https://registry.npmjs.org/ wrangler@latest d1 execute bigdata_db --remote --file db/002_tesouro_ipca_lotes.sql",
     "format": "biome format --write src",
     "format:public": "prettier --write \"**/index.html\"",
     "format:public:check": "prettier --check \"**/index.html\""
