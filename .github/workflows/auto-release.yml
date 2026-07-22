@@ -258,6 +258,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REQUIRED_PUSH_WORKFLOWS: deploy.yml format-public.yml codeql.yml socket.yml zizmor.yml
+          # Never auto-rerun deploy.yml for an old SHA: that could roll production back.
+          SAFE_CANCELLED_RERUN_WORKFLOWS: format-public.yml codeql.yml socket.yml zizmor.yml
           TARGET_SHA: ${{ steps.check.outputs.target_sha }}
         run: |
           set -euo pipefail
@@ -265,6 +267,13 @@ jobs:
           readonly stable_polls_required=3
           deadline=$((SECONDS + 2700))
           read -r -a required_workflows <<<"$REQUIRED_PUSH_WORKFLOWS"
+          read -r -a safe_cancelled_rerun_workflows <<<"$SAFE_CANCELLED_RERUN_WORKFLOWS"
+          readonly max_cancelled_attempts=3
+          declare -A safe_cancelled_rerun_names=()
+          declare -A rerun_requests=()
+          for workflow in "${safe_cancelled_rerun_workflows[@]}"; do
+            safe_cancelled_rerun_names["$workflow"]=true
+          done
 
           assert_target_is_on_main() {
             local phase="$1"
@@ -356,6 +365,25 @@ jobs:
               echo "$workflow run $run_id: status=$status conclusion=${conclusion:-pending}"
 
               if [ "$status" = "completed" ] && [ "$conclusion" != "success" ]; then
+                if [ "$conclusion" = "cancelled" ] && [ -n "${safe_cancelled_rerun_names[$workflow]:-}" ]; then
+                  run_attempt="$(jq -r '.attempt' <<<"$run_json")"
+                  if [ "$run_attempt" -ge "$max_cancelled_attempts" ]; then
+                    echo "::error::$workflow run $run_id was cancelled at attempt $run_attempt; automatic retries are capped at $max_cancelled_attempts." >&2
+                    exit 1
+                  fi
+                  rerun_key="${run_id}:${run_attempt}"
+                  if [ -z "${rerun_requests[$rerun_key]:-}" ]; then
+                    gh api --method POST \
+                      -H "Accept: application/vnd.github+json" \
+                      -H "X-GitHub-Api-Version: 2026-03-10" \
+                      "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/rerun" \
+                      >/dev/null
+                    rerun_requests["$rerun_key"]=true
+                    echo "::notice::Re-running cancelled side-effect-free gate $workflow run $run_id attempt $run_attempt at $TARGET_SHA."
+                  fi
+                  all_required_succeeded=false
+                  continue
+                fi
                 echo "::error::$workflow run $run_id concluded $conclusion for $TARGET_SHA." >&2
                 exit 1
               fi
