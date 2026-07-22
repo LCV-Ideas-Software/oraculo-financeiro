@@ -6,16 +6,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NODE_OPTIONS: "--no-deprecation"
   STEPSECURITY_NPM_TOKEN: ${{ secrets.STEPSECURITY_NPM_TOKEN }}
-  WRANGLER_VERSION: "latest"
 concurrency:
   group: deploy-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   deploy:
+    name: Deploy application
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: write-all
+    environment: cloudflare-production
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
@@ -23,13 +23,38 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
+      - name: Install and verify latest Wrangler
+        id: wrangler
+        shell: bash
+        run: | # zizmor: ignore[adhoc-packages] Wrangler latest is an explicit organization policy; signatures are verified below.
+          set -euo pipefail
+          wrangler_prefix="$RUNNER_TEMP/wrangler-latest"
+          npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/ wrangler@latest
+          npm audit signatures --prefix "$wrangler_prefix" --registry=https://registry.npmjs.org/
+
+          WRANGLER_BIN="$wrangler_prefix/node_modules/.bin/wrangler"
+          if [ ! -x "$WRANGLER_BIN" ]; then
+            echo "::error::The isolated Wrangler executable was not created." >&2
+            exit 1
+          fi
+          WRANGLER_VERSION="$("$WRANGLER_BIN" --version)"
+          if ! [[ "$WRANGLER_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected Wrangler version: $WRANGLER_VERSION" >&2
+            exit 1
+          fi
+
+          printf 'Resolved Wrangler version: %s\n' "$WRANGLER_VERSION"
+          printf 'bin=%s\nversion=%s\n' "$WRANGLER_BIN" "$WRANGLER_VERSION" >> "$GITHUB_OUTPUT"
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run biome
+      - run: npm test
       - run: npm run build
       - name: Inject D1 database_id from secret (root + workers/taxaipca-motor)
         run: |
@@ -48,15 +73,19 @@ jobs:
           done
         env:
           D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
-      - run: npx --registry=https://registry.npmjs.org/ wrangler@${WRANGLER_VERSION} pages deploy dist --project-name=oraculo-financeiro --branch=main
+      - name: Deploy Pages
+        run: |
+          "$WRANGLER_BIN" pages deploy dist --project-name=oraculo-financeiro --branch=main
         env:
+          WRANGLER_BIN: ${{ steps.wrangler.outputs.bin }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Deploy Cron Worker (taxaipca-motor)
-        run: npx --registry=https://registry.npmjs.org/ wrangler@${WRANGLER_VERSION} deploy --config workers/taxaipca-motor/wrangler.json
+        run: |
+          "$WRANGLER_BIN" deploy --strict --config workers/taxaipca-motor/wrangler.json
         env:
+          WRANGLER_BIN: ${{ steps.wrangler.outputs.bin }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     timeout-minutes: 30
-permissions:
-  contents: read
+permissions: write-all
