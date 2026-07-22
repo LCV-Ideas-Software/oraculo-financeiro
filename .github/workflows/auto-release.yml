@@ -107,11 +107,19 @@ jobs:
 
           assert_target_version() {
             local target_sha="$1"
-            local source raw target_version
-            if ! source="$(git show "${target_sha}:${VERSION_FILE}" 2>/dev/null)"; then
-              echo "::error::${VERSION_FILE} is missing at reconciliation target ${target_sha}." >&2
+            local encoded_version_file file_json source raw target_version
+            encoded_version_file="$(jq -rn --arg path "$VERSION_FILE" '$path | split("/") | map(@uri) | join("/")')"
+            if ! file_json="$(gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/contents/${encoded_version_file}?ref=${target_sha}")"; then
+              echo "::error::Could not read ${VERSION_FILE} from remote target ${target_sha}." >&2
               return 1
             fi
+            if ! jq -e '.type == "file" and .encoding == "base64" and (.content | type == "string")' \
+              <<<"$file_json" >/dev/null; then
+              echo "::error::Unexpected Contents API response for ${VERSION_FILE} at ${target_sha}." >&2
+              return 1
+            fi
+            source="$(jq -r '.content' <<<"$file_json" | base64 --decode)"
             raw="$(grep -E "APP_VERSION[[:space:]]*=[[:space:]]*['\"]APP v[0-9]+\.[0-9]+\.[0-9]+['\"]" <<<"$source" | head -1 || true)"
             if [ -z "$raw" ]; then
               echo "::error::Could not read APP_VERSION at reconciliation target ${target_sha}." >&2
@@ -258,8 +266,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REQUIRED_PUSH_WORKFLOWS: deploy.yml format-public.yml codeql.yml socket.yml zizmor.yml
-          # Never auto-rerun deploy.yml for an old SHA: that could roll production back.
-          SAFE_CANCELLED_RERUN_WORKFLOWS: format-public.yml codeql.yml socket.yml zizmor.yml
           TARGET_SHA: ${{ steps.check.outputs.target_sha }}
         run: |
           set -euo pipefail
@@ -267,13 +273,6 @@ jobs:
           readonly stable_polls_required=3
           deadline=$((SECONDS + 2700))
           read -r -a required_workflows <<<"$REQUIRED_PUSH_WORKFLOWS"
-          read -r -a safe_cancelled_rerun_workflows <<<"$SAFE_CANCELLED_RERUN_WORKFLOWS"
-          readonly max_cancelled_attempts=3
-          declare -A safe_cancelled_rerun_names=()
-          declare -A rerun_requests=()
-          for workflow in "${safe_cancelled_rerun_workflows[@]}"; do
-            safe_cancelled_rerun_names["$workflow"]=true
-          done
 
           assert_target_is_on_main() {
             local phase="$1"
@@ -365,25 +364,6 @@ jobs:
               echo "$workflow run $run_id: status=$status conclusion=${conclusion:-pending}"
 
               if [ "$status" = "completed" ] && [ "$conclusion" != "success" ]; then
-                if [ "$conclusion" = "cancelled" ] && [ -n "${safe_cancelled_rerun_names[$workflow]:-}" ]; then
-                  run_attempt="$(jq -r '.attempt' <<<"$run_json")"
-                  if [ "$run_attempt" -ge "$max_cancelled_attempts" ]; then
-                    echo "::error::$workflow run $run_id was cancelled at attempt $run_attempt; automatic retries are capped at $max_cancelled_attempts." >&2
-                    exit 1
-                  fi
-                  rerun_key="${run_id}:${run_attempt}"
-                  if [ -z "${rerun_requests[$rerun_key]:-}" ]; then
-                    gh api --method POST \
-                      -H "Accept: application/vnd.github+json" \
-                      -H "X-GitHub-Api-Version: 2026-03-10" \
-                      "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/rerun" \
-                      >/dev/null
-                    rerun_requests["$rerun_key"]=true
-                    echo "::notice::Re-running cancelled side-effect-free gate $workflow run $run_id attempt $run_attempt at $TARGET_SHA."
-                  fi
-                  all_required_succeeded=false
-                  continue
-                fi
                 echo "::error::$workflow run $run_id concluded $conclusion for $TARGET_SHA." >&2
                 exit 1
               fi
@@ -472,10 +452,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_SHA: ${{ steps.check.outputs.target_sha }}
+          EXPECTED_CODEQL_CATEGORIES: /language:actions /language:javascript-typescript
         run: |
           set -euo pipefail
           readonly poll_seconds=10
           deadline=$((SECONDS + 300))
+          read -r -a expected_categories <<<"$EXPECTED_CODEQL_CATEGORIES"
 
           while true; do
             analyses="$(
@@ -505,6 +487,23 @@ jobs:
                 exit 1
               fi
               echo "Waiting for CodeQL analysis metadata for exact target ${TARGET_SHA}."
+              sleep "$poll_seconds"
+              continue
+            fi
+
+            missing_categories=()
+            for category in "${expected_categories[@]}"; do
+              if ! jq -e --arg category "$category" \
+                'any(.[]; (.category // "") == $category)' <<<"$analyses" >/dev/null; then
+                missing_categories+=("$category")
+              fi
+            done
+            if [ "${#missing_categories[@]}" -ne 0 ]; then
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "::error::Missing exact-target CodeQL categories: ${missing_categories[*]}." >&2
+                exit 1
+              fi
+              echo "Waiting for exact-target CodeQL categories: ${missing_categories[*]}."
               sleep "$poll_seconds"
               continue
             fi
