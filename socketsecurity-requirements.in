@@ -1,5 +1,5 @@
 # Direct dependencies for the Socket Security workflow.
 # Regenerate socketsecurity-requirements.txt with hashes after every update.
 socketsecurity==2.5.0
-# Explicit security floor for GHSA-rwj8-pgh3-r573.
-gitpython>=3.1.54
+# Exact current release; Dependabot updates this source and the hash lock together.
+gitpython==3.1.54
