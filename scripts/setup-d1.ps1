@@ -27,7 +27,7 @@ if (-not (Test-Path $SchemaPath)) {
 }
 
 Write-Info "Criando D1 '$DatabaseName' (binding $Binding) com wrangler latest..."
-$createOutput = & npx --registry=https://registry.npmjs.org/ --yes wrangler@latest d1 create $DatabaseName --binding $Binding --update-config 2>&1 | Out-String
+$createOutput = & npx --yes wrangler@latest d1 create $DatabaseName --binding $Binding --update-config 2>&1 | Out-String
 
 if ($LASTEXITCODE -ne 0) {
   if ($createOutput -match 'already exists|already configured|already has') {
@@ -48,7 +48,7 @@ foreach ($cfgPath in @($WranglerConfigPath, $WorkerWranglerConfigPath)) {
   if ($cfgContent -match [regex]::Escape($NilUuid)) {
     Write-Host ""
     Write-Host "[ATENÇÃO] $cfgPath ainda contém o placeholder nil UUID ($NilUuid)." -ForegroundColor Yellow
-    Write-Host "Substitua manualmente pelo database_id real ou rode 'npx --registry=https://registry.npmjs.org/ wrangler d1 create $DatabaseName --binding $Binding --update-config'." -ForegroundColor Yellow
+    Write-Host "Substitua manualmente pelo database_id real ou rode 'npx wrangler d1 create $DatabaseName --binding $Binding --update-config'." -ForegroundColor Yellow
   }
   else {
     Write-Ok "$cfgPath aparenta ter database_id real (placeholder não encontrado)."
@@ -57,12 +57,12 @@ foreach ($cfgPath in @($WranglerConfigPath, $WorkerWranglerConfigPath)) {
 
 if (-not $SkipMigrate) {
   Write-Info "Aplicando schema remoto em '$DatabaseName'..."
-  & npx --registry=https://registry.npmjs.org/ --yes wrangler@latest d1 execute $DatabaseName --remote --file $SchemaPath
+  & npx --yes wrangler@latest d1 execute $DatabaseName --remote --file $SchemaPath
 
   $extraSchemaPath = "db/002_tesouro_ipca_lotes.sql"
   if (Test-Path $extraSchemaPath) {
     Write-Info "Aplicando schema complementar: $extraSchemaPath"
-    & npx --registry=https://registry.npmjs.org/ --yes wrangler@latest d1 execute $DatabaseName --remote --file $extraSchemaPath
+    & npx --yes wrangler@latest d1 execute $DatabaseName --remote --file $extraSchemaPath
   }
 
   Write-Ok "Schemas aplicados com sucesso."
