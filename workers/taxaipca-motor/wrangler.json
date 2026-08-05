@@ -2,6 +2,8 @@
   "name": "taxaipca-motor",
   "main": "index.ts",
   "compatibility_date": "2026-04-06",
+  "workers_dev": false,
+  "preview_urls": false,
   "triggers": {
     "crons": ["0 5 * * *"]
   },

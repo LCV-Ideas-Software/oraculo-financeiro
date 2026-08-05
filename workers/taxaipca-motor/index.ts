@@ -190,25 +190,11 @@ export default {
     )
   },
 
-  // Fallback HTTP — permite testar manualmente via GET
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url)
-    console.log(`[taxaipca-motor] 🔧 Execução manual via HTTP: ${request.method} ${url.pathname}`)
-    console.log(`[taxaipca-motor]   agora (UTC): ${new Date().toISOString()}`)
-    try {
-      const msg = await processarCSV(env.BIGDATA_DB, 'http-manual')
-      console.log(`[taxaipca-motor] 🏁 Execução manual concluída: ${msg}`)
-      return new Response(JSON.stringify({ ok: true, message: msg }), {
-        headers: { 'Content-Type': 'application/json' },
-      })
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Erro interno'
-      console.error(`[taxaipca-motor] ❌ Execução manual falhou: ${errorMsg}`)
-      if (error instanceof Error && error.stack) console.error(`[taxaipca-motor] Stack: ${error.stack}`)
-      return new Response(JSON.stringify({ ok: false, error: errorMsg }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+  // Este Worker é exclusivamente agendado. HTTP nunca inicia processamento nem acessa D1.
+  fetch(): Response {
+    return new Response(null, {
+      status: 404,
+      headers: { 'Cache-Control': 'no-store' },
+    })
   },
 }

@@ -18,7 +18,7 @@
 | react | ^19.2.4 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.4 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.13.1 | MIT | Não | https://registry.npmjs.org/sanitize-html |
-| typescript | ~6.0.2 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
-| typescript-eslint | ^8.58.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
+| typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
+| typescript-eslint | ^8.66.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.0.8 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^4.1.4 | MIT | Não | https://registry.npmjs.org/vitest |
