@@ -163,136 +163,160 @@ Regras de Extração e Conversão:
     ];
 
     const _telStart = Date.now();
-    try {
-      const countRes = await ai.models.countTokens({
-        model: modelName,
-        contents: [
-          {
-            inlineData: {
-              data: payload.imageBase64,
-              mimeType: payload.mimeType,
-            },
-          },
-          'Extraia os dados estruturados deste arquivo (imagem ou PDF).',
-        ],
-        config: { httpOptions: { timeout: 20_000 } },
-      });
-      const inputTokens = countRes.totalTokens || 0;
-      if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
-        structuredLog('error', 'Token limit exceeded in Vision', {
-          endpoint: 'tesouro-ipca-vision',
-          tokens: inputTokens,
-        });
-        return jsonResponse(
-          { ok: false, error: `Documento muito grande para análise de ML: ${inputTokens} tokens.` },
-          413,
-        );
-      }
-    } catch (countError) {
-      structuredLog('warn', 'Token count failed in Vision', {
-        endpoint: 'tesouro-ipca-vision',
-        error: String(countError),
-      });
-    }
 
-    let rawText = '';
-    let usageDetails = {};
-    for (let tentativa = 0; tentativa < 2; tentativa++) {
+    const visionContents = [
+      {
+        inlineData: {
+          data: payload.imageBase64,
+          mimeType: payload.mimeType,
+        },
+      },
+      'Extraia os dados estruturados deste arquivo (imagem ou PDF).',
+    ];
+
+    // Um 404 de publisher model (countTokens/generateContent) significa modelo
+    // indisponível; um 404 da mint OAuth ou de qualquer outra origem não.
+    const isModelUnavailable = (error: unknown): boolean =>
+      error instanceof VertexHttpError && error.status === 404 && error.operation !== 'oauth-token';
+
+    type PipelineOutcome =
+      | { kind: 'ok'; rawText: string; usageDetails: Record<string, number> }
+      | { kind: 'model-unavailable' }
+      | { kind: 'http-response'; response: Response };
+
+    // Executa o pipeline completo (guard de maxTokensInput + geração com retry)
+    // para um modelo. Com signalModelUnavailable, o 404 de publisher model
+    // interrompe cedo para o caller repetir o pipeline INTEIRO no modelo
+    // padrão — o guard de entrada é reavaliado no fallback, nunca contornado.
+    const runVertexPipeline = async (model: string, signalModelUnavailable: boolean): Promise<PipelineOutcome> => {
       try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: [
-            {
-              inlineData: {
-                data: payload.imageBase64,
-                mimeType: payload.mimeType,
-              },
-            },
-            'Extraia os dados estruturados deste arquivo (imagem ou PDF).',
-          ],
-          config: {
-            systemInstruction: systemInstruction,
-            responseMimeType: 'application/json',
-            temperature: VERTEX_CONFIG.temperature,
-            maxOutputTokens: VERTEX_CONFIG.maxOutputTokens,
-            // Sem thinkingConfig: o REST v1 do Vertex rejeita thinkingBudgetTokens
-            // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
-            // comportamento efetivo (sem budget de thinking) é preservado.
-            safetySettings,
-            httpOptions: { timeout: VERTEX_REQUEST_TIMEOUT_MS },
-          },
+        const countRes = await ai.models.countTokens({
+          model,
+          contents: visionContents,
+          config: { httpOptions: { timeout: 20_000 } },
         });
-
-        if (response.text) {
-          rawText = response.text;
-          const metadata = response.usageMetadata || {};
-          usageDetails = {
-            promptTokens: metadata.promptTokenCount || 0,
-            outputTokens: metadata.candidatesTokenCount || 0,
-            cachedTokens: metadata.cachedContentTokenCount || 0,
+        const inputTokens = countRes.totalTokens || 0;
+        if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
+          structuredLog('error', 'Token limit exceeded in Vision', {
+            endpoint: 'tesouro-ipca-vision',
+            tokens: inputTokens,
+          });
+          return {
+            kind: 'http-response',
+            response: jsonResponse(
+              { ok: false, error: `Documento muito grande para análise de ML: ${inputTokens} tokens.` },
+              413,
+            ),
           };
-          structuredLog('info', 'Geracao Gemini concluida', {
+        }
+      } catch (countError) {
+        if (signalModelUnavailable && isModelUnavailable(countError)) return { kind: 'model-unavailable' };
+        structuredLog('warn', 'Token count failed in Vision', {
+          endpoint: 'tesouro-ipca-vision',
+          error: String(countError),
+        });
+      }
+
+      for (let tentativa = 0; tentativa < 2; tentativa++) {
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: visionContents,
+            config: {
+              systemInstruction: systemInstruction,
+              responseMimeType: 'application/json',
+              temperature: VERTEX_CONFIG.temperature,
+              maxOutputTokens: VERTEX_CONFIG.maxOutputTokens,
+              // Sem thinkingConfig: o REST v1 do Vertex rejeita thinkingBudgetTokens
+              // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
+              // comportamento efetivo (sem budget de thinking) é preservado.
+              safetySettings,
+              httpOptions: { timeout: VERTEX_REQUEST_TIMEOUT_MS },
+            },
+          });
+
+          if (response.text) {
+            const metadata = response.usageMetadata || {};
+            const usageDetails = {
+              promptTokens: metadata.promptTokenCount || 0,
+              outputTokens: metadata.candidatesTokenCount || 0,
+              cachedTokens: metadata.cachedContentTokenCount || 0,
+            };
+            structuredLog('info', 'Geracao Gemini concluida', {
+              endpoint: 'tesouro-ipca-vision',
+              attempt: tentativa + 1,
+              usage: usageDetails,
+            });
+            return { kind: 'ok', rawText: response.text, usageDetails };
+          }
+          throw new Error('Gemini retornou resposta vazia ou bloqueada pelos filtros de segurança.');
+        } catch (error) {
+          if (signalModelUnavailable && isModelUnavailable(error)) return { kind: 'model-unavailable' };
+          const errMsg = error instanceof Error ? error.message : String(error);
+          structuredLog('warn', 'Falha ao requisitar Gemini (Vision)', {
             endpoint: 'tesouro-ipca-vision',
             attempt: tentativa + 1,
-            usage: usageDetails,
+            error: errMsg,
           });
-          break;
-        } else {
-          throw new Error('Gemini retornou resposta vazia ou bloqueada pelos filtros de segurança.');
+          if (tentativa === 1) {
+            void logAiUsage(env?.BIGDATA_DB, {
+              module: 'oraculo-vision-ocr',
+              model,
+              input_tokens: 0,
+              output_tokens: 0,
+              latency_ms: Date.now() - _telStart,
+              status: 'error',
+              error_detail: errMsg.slice(0, 200),
+            });
+            return {
+              kind: 'http-response',
+              response: jsonResponse({ ok: false, error: `Falha na requisição AI Gemini: ${errMsg}` }, 500),
+            };
+          }
+          await new Promise((r) => setTimeout(r, 800));
         }
-      } catch (error) {
-        const errMsg = error instanceof Error ? error.message : String(error);
-        structuredLog('warn', 'Falha ao requisitar Gemini (Vision)', {
-          endpoint: 'tesouro-ipca-vision',
-          attempt: tentativa + 1,
-          error: errMsg,
-        });
-        // Seletor sempre respeitado: só quando o modelo selecionado está
-        // indisponível no Vertex (404) o transporte cai para o padrão validado,
-        // com tentativas renovadas. Dispara no máximo uma vez — após a troca,
-        // modelName === DEFAULT_ORACULO_MODEL.
-        if (error instanceof VertexHttpError && error.status === 404 && modelName !== DEFAULT_ORACULO_MODEL) {
-          structuredLog('warn', 'Modelo do seletor indisponível no Vertex — fallback para o padrão validado', {
-            endpoint: 'tesouro-ipca-vision',
-            selectedModel: modelName,
-            fallbackModel: DEFAULT_ORACULO_MODEL,
-          });
-          modelName = DEFAULT_ORACULO_MODEL;
-          tentativa = -1;
-          continue;
-        }
-        if (tentativa === 1) {
-          void logAiUsage(env?.BIGDATA_DB, {
-            module: 'oraculo-vision-ocr',
-            model: modelName,
-            input_tokens: 0,
-            output_tokens: 0,
-            latency_ms: Date.now() - _telStart,
-            status: 'error',
-            error_detail: errMsg.slice(0, 200),
-          });
-          return jsonResponse({ ok: false, error: `Falha na requisição AI Gemini: ${errMsg}` }, 500);
-        }
-        await new Promise((r) => setTimeout(r, 800));
       }
-    }
 
-    if (!rawText) {
+      // Rede defensiva (a última tentativa sempre retorna acima).
       structuredLog('error', 'Gemini retornou vazio em extacao OCR', { endpoint: 'tesouro-ipca-vision' });
       void logAiUsage(env?.BIGDATA_DB, {
         module: 'oraculo-vision-ocr',
-        model: modelName,
+        model,
         input_tokens: 0,
         output_tokens: 0,
         latency_ms: Date.now() - _telStart,
         status: 'error',
         error_detail: 'Empty OCR response',
       });
-      return jsonResponse(
-        { ok: false, error: 'Gemini retornou resposta vazia ou bloqueada pelos filtros de segurança.' },
-        500,
-      );
+      return {
+        kind: 'http-response',
+        response: jsonResponse(
+          { ok: false, error: 'Gemini retornou resposta vazia ou bloqueada pelos filtros de segurança.' },
+          500,
+        ),
+      };
+    };
+
+    // Seletor sempre respeitado: o modelo configurado roda primeiro; só quando
+    // o Vertex o declara indisponível (404) o pipeline repete no padrão
+    // validado. Quando o seletor JÁ é o padrão, o 404 segue o fluxo comum de
+    // erro (sem loop de fallback).
+    let outcome = await runVertexPipeline(modelName, modelName !== DEFAULT_ORACULO_MODEL);
+    if (outcome.kind === 'model-unavailable') {
+      structuredLog('warn', 'Modelo do seletor indisponível no Vertex — fallback para o padrão validado', {
+        endpoint: 'tesouro-ipca-vision',
+        selectedModel: modelName,
+        fallbackModel: DEFAULT_ORACULO_MODEL,
+      });
+      modelName = DEFAULT_ORACULO_MODEL;
+      outcome = await runVertexPipeline(modelName, false);
     }
+    if (outcome.kind !== 'ok') {
+      if (outcome.kind === 'http-response') return outcome.response;
+      // Inalcançável: a repetição do pipeline roda com signalModelUnavailable=false.
+      return jsonResponse({ ok: false, error: 'Erro interno.' }, 500);
+    }
+    const { rawText, usageDetails } = outcome;
 
     // Telemetria de sucesso
     void logAiUsage(env?.BIGDATA_DB, {

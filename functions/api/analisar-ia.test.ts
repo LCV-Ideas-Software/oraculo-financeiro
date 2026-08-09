@@ -6,6 +6,7 @@ const runtime = vi.hoisted(() => {
     constructor(
       message: string,
       readonly status: number,
+      readonly operation: string,
     ) {
       super(message);
       this.name = 'VertexHttpError';
@@ -17,7 +18,9 @@ const runtime = vi.hoisted(() => {
     countRequests: [] as Record<string, unknown>[],
     generateText: '',
     totalTokens: 100,
+    count404Models: [] as string[],
     generate404Models: [] as string[],
+    generate404Operation: 'generateContent',
     MockVertexHttpError,
   };
 });
@@ -31,6 +34,13 @@ vi.mock('./_shared/vertex', () => ({
     readonly models = {
       countTokens: async (request: Record<string, unknown>) => {
         runtime.countRequests.push(request);
+        if (runtime.count404Models.includes(request.model as string)) {
+          throw new runtime.MockVertexHttpError(
+            `Vertex countTokens falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
+            404,
+            'countTokens',
+          );
+        }
         return { totalTokens: runtime.totalTokens };
       },
       generateContent: async (request: Record<string, unknown>) => {
@@ -39,6 +49,7 @@ vi.mock('./_shared/vertex', () => ({
           throw new runtime.MockVertexHttpError(
             `Vertex generateContent falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
             404,
+            runtime.generate404Operation,
           );
         }
         return {
@@ -111,7 +122,9 @@ beforeEach(() => {
   runtime.countRequests.length = 0;
   runtime.generateText = JSON.stringify(ANALISE_VALIDA);
   runtime.totalTokens = 100;
+  runtime.count404Models.length = 0;
   runtime.generate404Models.length = 0;
+  runtime.generate404Operation = 'generateContent';
 });
 
 describe('/api/analisar-ia — transporte Vertex', () => {
@@ -170,6 +183,40 @@ describe('/api/analisar-ia — transporte Vertex', () => {
     expect(await res.json()).toEqual({ ok: true, analise: ANALISE_VALIDA });
     // O seletor é sempre honrado primeiro; o fallback só entra após a indisponibilidade real.
     expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+    // O pipeline inteiro é repetido no fallback: o guard de entrada roda de novo no modelo padrão.
+    expect(runtime.countRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+  });
+
+  it('quando o 404 aparece já no countTokens, o fallback re-conta com o padrão antes de gerar', async () => {
+    runtime.count404Models.push('gemini-9.9-ultra');
+    runtime.generate404Models.push('gemini-9.9-ultra');
+    const db = createDb(JSON.stringify({ modeloAnalise: 'gemini-9.9-ultra' }));
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: db }));
+
+    expect(res.status).toBe(200);
+    expect(runtime.countRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+    // O modelo indisponível nunca chega à geração; o padrão gera após passar pelo guard.
+    expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-3.1-pro-preview']);
+  });
+
+  it('o guard de maxTokensInput vale também no caminho de fallback (413 sem gerar)', async () => {
+    runtime.count404Models.push('gemini-9.9-ultra');
+    runtime.totalTokens = 200_000;
+    const db = createDb(JSON.stringify({ modeloAnalise: 'gemini-9.9-ultra' }));
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: db }));
+
+    expect(res.status).toBe(413);
+    expect(runtime.generateRequests).toHaveLength(0);
+  });
+
+  it('um 404 vindo da mint OAuth NÃO dispara fallback de modelo (proveniência da operação)', async () => {
+    runtime.generate404Models.push('gemini-9.9-ultra');
+    runtime.generate404Operation = 'oauth-token';
+    const db = createDb(JSON.stringify({ modeloAnalise: 'gemini-9.9-ultra' }));
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: db }));
+
+    expect(res.status).toBe(500);
+    expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-9.9-ultra']);
   });
 
   it('não entra em loop quando o próprio modelo padrão está indisponível (404)', async () => {

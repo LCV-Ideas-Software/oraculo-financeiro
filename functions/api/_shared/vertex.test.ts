@@ -193,8 +193,31 @@ describe('montagem das requisições REST do Vertex', () => {
     );
   });
 
-  it.each(['attacker.example/path?', 'not-a-vertex-region'])(
-    'rejeita VERTEX_LOCATION não reconhecida (%s) antes de obter ou transmitir o bearer token',
+  it.each(['europe-west10', 'asia-south2', 'northamerica-northeast1'])(
+    'aceita qualquer região oficial do Vertex sem lista hard-coded que envelheça (%s)',
+    async (location) => {
+      const sa = await makeTestSa(`kid-region-${location}`);
+      const mock = makeFetchMock();
+      const ai = new VertexGenAI({ saKeyJson: sa.saJson, project: 'proj-x', location, fetchImpl: mock.fetchImpl });
+
+      await ai.models.countTokens({ model: 'm', contents: 'oi' });
+
+      expect(mock.calls.api[0]!.url).toBe(
+        `https://${location}-aiplatform.googleapis.com/v1/projects/proj-x/locations/${location}/publishers/google/models/m:countTokens`,
+      );
+    },
+  );
+
+  it.each([
+    'attacker.example/path?',
+    'evil.com',
+    'aiplatform.googleapis.com.evil',
+    'Us-Central1',
+    'us..central1',
+    '-us-central1',
+    '',
+  ])(
+    'rejeita VERTEX_LOCATION que não é rótulo DNS minúsculo único (%s) antes de obter ou transmitir o bearer token',
     async (location) => {
       const sa = await makeTestSa('kid-location-origin');
       const mock = makeFetchMock();
@@ -416,6 +439,34 @@ describe('regressão workerd e erros diagnósticos', () => {
     expect(String((failure as Error).message)).toMatch(/429.*Resource exhausted/su);
   });
 
+  it('VertexHttpError carrega a operação de origem — generateContent, countTokens e oauth-token são distinguíveis', async () => {
+    const saGen = await makeTestSa('kid-op-gen');
+    const gen404 = makeFetchMock({
+      apiStatus: 404,
+      apiPayload: { error: { code: 404, message: 'Publisher Model not found' } },
+    });
+    const genFailure = await client(saGen, gen404)
+      .models.generateContent({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect((genFailure as VertexHttpError).operation).toBe('generateContent');
+
+    const saCount = await makeTestSa('kid-op-count');
+    const count404 = makeFetchMock({
+      apiStatus: 404,
+      apiPayload: { error: { code: 404, message: 'Publisher Model not found' } },
+    });
+    const countFailure = await client(saCount, count404)
+      .models.countTokens({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect((countFailure as VertexHttpError).operation).toBe('countTokens');
+  });
+
   it('erro do token endpoint também carrega status e detalhe do OAuth', async () => {
     const sa = await makeTestSa('kid-err-token');
     const mock = makeFetchMock({
@@ -430,6 +481,7 @@ describe('regressão workerd e erros diagnósticos', () => {
       );
     expect(failure).toBeInstanceOf(VertexHttpError);
     expect((failure as VertexHttpError).status).toBe(400);
+    expect((failure as VertexHttpError).operation).toBe('oauth-token');
     expect(String((failure as Error).message)).toMatch(/invalid_grant.*Invalid JWT Signature/su);
   });
 

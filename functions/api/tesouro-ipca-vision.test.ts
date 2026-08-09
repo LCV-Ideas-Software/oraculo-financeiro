@@ -6,6 +6,7 @@ const runtime = vi.hoisted(() => {
     constructor(
       message: string,
       readonly status: number,
+      readonly operation: string,
     ) {
       super(message);
       this.name = 'VertexHttpError';
@@ -17,6 +18,7 @@ const runtime = vi.hoisted(() => {
     countRequests: [] as Record<string, unknown>[],
     generateText: '',
     totalTokens: 570,
+    count404Models: [] as string[],
     generate404Models: [] as string[],
     MockVertexHttpError,
   };
@@ -31,6 +33,13 @@ vi.mock('./_shared/vertex', () => ({
     readonly models = {
       countTokens: async (request: Record<string, unknown>) => {
         runtime.countRequests.push(request);
+        if (runtime.count404Models.includes(request.model as string)) {
+          throw new runtime.MockVertexHttpError(
+            `Vertex countTokens falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
+            404,
+            'countTokens',
+          );
+        }
         return { totalTokens: runtime.totalTokens };
       },
       generateContent: async (request: Record<string, unknown>) => {
@@ -39,6 +48,7 @@ vi.mock('./_shared/vertex', () => ({
           throw new runtime.MockVertexHttpError(
             `Vertex generateContent falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
             404,
+            'generateContent',
           );
         }
         return {
@@ -84,6 +94,7 @@ beforeEach(() => {
   runtime.countRequests.length = 0;
   runtime.generateText = JSON.stringify(LOTES);
   runtime.totalTokens = 570;
+  runtime.count404Models.length = 0;
   runtime.generate404Models.length = 0;
 });
 
@@ -148,6 +159,21 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
     expect(await res.json()).toEqual({ ok: true, data: LOTES });
     // O seletor é sempre honrado primeiro; o fallback só entra após a indisponibilidade real.
     expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+    // O pipeline inteiro é repetido no fallback: o guard de entrada roda de novo no modelo padrão.
+    expect(runtime.countRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+  });
+
+  it('quando o 404 aparece já no countTokens, o fallback re-conta com o padrão antes de gerar (guard preservado)', async () => {
+    runtime.count404Models.push('gemini-9.9-ultra');
+    runtime.generate404Models.push('gemini-9.9-ultra');
+    const db = createDb(JSON.stringify({ modeloVision: 'gemini-9.9-ultra' }));
+    const res = await onRequestPost(
+      context({ imageBase64: 'QUJD', mimeType: 'application/pdf' }, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: db }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(runtime.countRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+    expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-3.1-pro-preview']);
   });
 
   it('cai no modelo padrão quando o seletor está vazio e retorna 500 quando a IA não devolve array', async () => {

@@ -76,13 +76,18 @@ export interface VertexGenerateContentResponse {
   text: string;
 }
 
-/** Erro HTTP com status numérico preservado para o classificador de retry do caller. */
+/** Operação de origem de um VertexHttpError — permite ao caller distinguir um
+ * 404 de publisher model (fallback de seletor) de falhas da mint OAuth. */
+export type VertexOperation = 'oauth-token' | 'generateContent' | 'countTokens';
+
+/** Erro HTTP com status numérico e operação de origem preservados para o classificador de retry/fallback do caller. */
 export class VertexHttpError extends Error {
   override readonly name = 'VertexHttpError';
 
   constructor(
     message: string,
     readonly status: number,
+    readonly operation: VertexOperation,
   ) {
     super(message);
   }
@@ -99,56 +104,24 @@ const ERROR_BODY_EXCERPT = 300;
 // pendure o single-flight e todos os callers que aguardam a mesma mint.
 const TOKEN_MINT_TIMEOUT_MS = 20_000;
 
-// Lista canônica de service endpoints regionais do Vertex AI. O allowlist evita
-// que configuração livre altere a origem de uma requisição com bearer token.
+// O location compõe o HOST do service endpoint regional
+// (`<location>-aiplatform.googleapis.com`). A validação de rótulo DNS único
+// minúsculo (sem pontos, barras ou espaços) garante que nenhuma configuração
+// livre desloque a origem de uma requisição com bearer token para fora de
+// googleapis.com, sem manter uma lista hard-coded que envelhece quando o
+// Google adiciona regiões (ex.: europe-west10, asia-south2). Uma região
+// bem-formada porém inexistente falha na resolução DNS da própria chamada.
 // Fonte: https://cloud.google.com/vertex-ai/docs/reference/rest#service-endpoint
-const REGIONAL_VERTEX_LOCATIONS = new Set([
-  'africa-south1',
-  'asia-east1',
-  'asia-east2',
-  'asia-northeast1',
-  'asia-northeast2',
-  'asia-northeast3',
-  'asia-south1',
-  'asia-southeast1',
-  'asia-southeast2',
-  'australia-southeast1',
-  'australia-southeast2',
-  'europe-central2',
-  'europe-north1',
-  'europe-southwest1',
-  'europe-west1',
-  'europe-west2',
-  'europe-west3',
-  'europe-west4',
-  'europe-west6',
-  'europe-west8',
-  'europe-west9',
-  'europe-west12',
-  'me-central1',
-  'me-central2',
-  'me-west1',
-  'northamerica-northeast1',
-  'northamerica-northeast2',
-  'southamerica-east1',
-  'southamerica-west1',
-  'us-central1',
-  'us-east1',
-  'us-east4',
-  'us-east5',
-  'us-south1',
-  'us-west1',
-  'us-west2',
-  'us-west3',
-  'us-west4',
-]);
+const VALID_VERTEX_LOCATION_LABEL = /^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const resolveVertexBaseUrl = (location: string): string => {
   if (location === 'global') return 'https://aiplatform.googleapis.com';
   if (location === 'us' || location === 'eu') return `https://aiplatform.${location}.rep.googleapis.com`;
-  if (REGIONAL_VERTEX_LOCATIONS.has(location)) return `https://${location}-aiplatform.googleapis.com`;
+  if (VALID_VERTEX_LOCATION_LABEL.test(location)) return `https://${location}-aiplatform.googleapis.com`;
 
-  throw new Error('VERTEX_LOCATION inválida: use global, us, eu ou uma região oficial do Vertex AI');
+  throw new Error(
+    'VERTEX_LOCATION inválida: use global, us, eu ou uma região oficial do Vertex AI (rótulo DNS minúsculo único, sem pontos).',
+  );
 };
 
 // Cache module-level: sobrevive entre requests no mesmo isolate. Chaveado pela
@@ -225,6 +198,7 @@ const mintAccessToken = async (
     throw new VertexHttpError(
       `Falha ao obter access token OAuth para ${sa.client_email} (HTTP ${res.status}): ${detail}`,
       res.status,
+      'oauth-token',
     );
   }
   const data = (await res.json()) as { access_token?: string; expires_in?: number };
@@ -348,7 +322,7 @@ export class VertexGenAI {
 
   private async request(
     model: string,
-    verb: string,
+    verb: 'generateContent' | 'countTokens',
     body: Record<string, unknown>,
     timeoutMs?: number,
   ): Promise<unknown> {
@@ -374,7 +348,7 @@ export class VertexGenAI {
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, ERROR_BODY_EXCERPT);
-      throw new VertexHttpError(`Vertex ${verb} falhou (HTTP ${res.status}): ${detail}`, res.status);
+      throw new VertexHttpError(`Vertex ${verb} falhou (HTTP ${res.status}): ${detail}`, res.status, verb);
     }
     return res.json();
   }
