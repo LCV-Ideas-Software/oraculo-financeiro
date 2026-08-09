@@ -13,14 +13,15 @@
 [![framework: React 19 + Vite 8](https://img.shields.io/badge/framework-React%2019%20%2B%20Vite%208-61dafb.svg)](https://react.dev/)
 [![license: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
-**Oráculo Financeiro** — dashboard de análise financeira focado em renda fixa indexada à inflação (LCI/CDB com IPCA+, Tesouro IPCA+ etc.) com análise contextual via Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store + Cron Worker auxiliar para pre-warming de cache de taxa.
+**Oráculo Financeiro** — dashboard de análise financeira focado em renda fixa indexada à inflação (LCI/CDB com IPCA+, Tesouro IPCA+ etc.) com análise contextual via Gemini AI no Vertex AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store + Cron Worker auxiliar para pre-warming de cache de taxa.
 
-**Status.** Stable. Current release: **v01.10.08**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v01.11.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release         | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v01.11.00`** | **Vertex AI migration.** AI transport moves from the Gemini API key (`@google/genai`) to Vertex AI REST v1 with service-account OAuth (`VERTEX_SA_KEY`); both AI endpoints now honor the admin model selectors (`modeloAnalise`/`modeloVision`) against a validated model allowlist. Prompts, retry, telemetry, and rate limiting unchanged. |
 | **`v01.10.08`** | **Dependency security patch.** Updates transitive `protobufjs` to 7.6.5 and `brace-expansion` to 5.0.7, resolving GHSA-j3f2-48v5-ccww and GHSA-3jxr-9vmj-r5cp without changing application APIs. |
 | **`v01.10.07`** | **4-gate quality directive compliance.** Added Biome scripts, deploy workflow coverage after eslint, scoped Biome to source/functions, and applied cosmetic source formatting plus safe callback cleanup required by the gate.                                                                                |
 | **`v01.10.06`** | **npm registry split for StepSecurity.** Operational Wrangler scripts now force the public npm registry for `npx` while preserving the StepSecurity proxy for dependency install/update flows.                                                                                                      |
@@ -129,7 +130,7 @@ Or run `npm run d1:setup` which wraps both.
 ### 5. Configure secrets
 
 ```bash
-npx wrangler secret put GEMINI_API_KEY --env production
+npx wrangler secret put VERTEX_SA_KEY --env production  # service-account JSON key (Vertex AI)
 npx wrangler secret put RESEND_APPKEY --env production  # only if using email feature
 ```
 

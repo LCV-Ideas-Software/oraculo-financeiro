@@ -1,15 +1,18 @@
 // Módulo: oraculo-financeiro/functions/api/analisar-ia.ts
-// Versão: v01.01.00
-// Descrição: Upgrade Gemini API — modelo gemini-3.1-pro-preview (auto-atualiza), v1beta, thinkingLevel HIGH, safetySettings (BLOCK_NONE para conteúdo financeiro), retry com 1 tentativa extra. Prompt fiduciário preservado.
+// Versão: v01.11.00
+// Descrição: Migração para Vertex AI — service account OAuth (VERTEX_SA_KEY), REST v1 global, modelo do seletor do admin (modeloAnalise; padrão gemini-3.1-pro-preview), safetySettings e retry preservados. Prompt fiduciário preservado.
 
-import { GoogleGenAI } from '@google/genai';
+import { loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
 import { type D1DatabaseLike, enforceRateLimit, jsonResponse, requireAllowedOrigin } from './_shared/security';
+import { VertexGenAI } from './_shared/vertex';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
 interface Env {
   BIGDATA_DB: D1DatabaseLike;
-  GEMINI_API_KEY: string;
+  VERTEX_SA_KEY: string;
+  VERTEX_PROJECT?: string;
+  VERTEX_LOCATION?: string;
 }
 
 interface Context {
@@ -234,12 +237,14 @@ Se há lotes com perfis muito diferentes, destaque o mais relevante.`;
 
 // ─── UTILIDADES ───────────────────────────────────────────────────────────────
 
-const GEMINI_CONFIG = {
-  model: 'gemini-3.1-pro-preview',
+const VERTEX_CONFIG = {
   maxTokensInput: 120000,
   maxOutputTokens: 8192,
   temperature: 0.3,
 };
+
+const DEFAULT_VERTEX_PROJECT = 'lcv-ideas-and-software';
+const DEFAULT_VERTEX_LOCATION = 'global';
 
 function structuredLog(level: string, message: string, context = {}) {
   const logEntry = {
@@ -308,11 +313,8 @@ export const onRequestPost = async ({ env, request }: Context) => {
     const rateLimitError = await enforceRateLimit(request, env.BIGDATA_DB, 'analisar_ia');
     if (rateLimitError) return rateLimitError;
 
-    const envRec = env as unknown as Record<string, unknown>;
-    const candidate =
-      env?.GEMINI_API_KEY || envRec.GEMINI_APP_KEY || envRec['gemini-api-key'] || envRec['gemini-app-key'];
-    const apiKey = typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
-    if (!apiKey) {
+    const saKeyJson = typeof env?.VERTEX_SA_KEY === 'string' && env.VERTEX_SA_KEY.length > 0 ? env.VERTEX_SA_KEY : null;
+    if (!saKeyJson) {
       return jsonResponse({ ok: false, error: 'Serviço de IA indisponível.' }, 503);
     }
 
@@ -333,8 +335,12 @@ export const onRequestPost = async ({ env, request }: Context) => {
         ? buildPromptLciLca(payload as PayloadLciLca)
         : buildPromptTesouro(payload as PayloadTesouro);
 
-    const ai = new GoogleGenAI({ apiKey });
-    const modelName = GEMINI_CONFIG.model;
+    const ai = new VertexGenAI({
+      saKeyJson,
+      project: env?.VERTEX_PROJECT || DEFAULT_VERTEX_PROJECT,
+      location: env?.VERTEX_LOCATION || DEFAULT_VERTEX_LOCATION,
+    });
+    const modelName = await loadConfiguredOraculoModel(env?.BIGDATA_DB, 'modeloAnalise');
 
     const safetySettings = [
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -348,7 +354,7 @@ export const onRequestPost = async ({ env, request }: Context) => {
     try {
       const countRes = await ai.models.countTokens({ model: modelName, contents: userPrompt });
       const inputTokens = countRes.totalTokens || 0;
-      if (inputTokens > GEMINI_CONFIG.maxTokensInput) {
+      if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
         structuredLog('error', 'Token limit exceeded', { endpoint: 'analisar-ia', tokens: inputTokens });
         return jsonResponse({ ok: false, error: `Contexto muito longo: ${inputTokens} tokens.` }, 413);
       }
@@ -366,12 +372,12 @@ export const onRequestPost = async ({ env, request }: Context) => {
           config: {
             systemInstruction: SYSTEM_PROMPT,
             responseMimeType: 'application/json',
-            temperature: GEMINI_CONFIG.temperature,
-            maxOutputTokens: GEMINI_CONFIG.maxOutputTokens,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            thinkingConfig: { thinkingBudgetTokens: 1024 } as any,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            safetySettings: safetySettings as any,
+            temperature: VERTEX_CONFIG.temperature,
+            maxOutputTokens: VERTEX_CONFIG.maxOutputTokens,
+            // Sem thinkingConfig: o REST v1 do Vertex rejeita thinkingBudgetTokens
+            // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
+            // comportamento efetivo (sem budget de thinking) é preservado.
+            safetySettings,
           },
         });
 

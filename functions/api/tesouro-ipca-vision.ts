@@ -1,15 +1,18 @@
 // Módulo: oraculo-financeiro/functions/api/tesouro-ipca-vision.ts
-// Versão: v01.02.05
-// Descrição: OCR multimodal via Gemini 2.5 Pro — extrai lotes do Tesouro IPCA+ a partir de imagens de extratos.
+// Versão: v01.11.00
+// Descrição: OCR multimodal via Vertex AI (service account OAuth, REST v1 global) — extrai lotes do Tesouro IPCA+ a partir de imagens/PDFs de extratos; modelo do seletor do admin (modeloVision; padrão gemini-3.1-pro-preview).
 // Alinhado ao padrão do analisar-ia.ts: retry, thought filtering, jsonResponse, safety BLOCK_ONLY_HIGH.
 
-import { GoogleGenAI } from '@google/genai';
+import { loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
 import { type D1DatabaseLike, enforceRateLimit, jsonResponse, requireAllowedOrigin } from './_shared/security';
+import { VertexGenAI } from './_shared/vertex';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
 interface Env {
-  GEMINI_API_KEY: string;
+  VERTEX_SA_KEY: string;
+  VERTEX_PROJECT?: string;
+  VERTEX_LOCATION?: string;
   BIGDATA_DB?: D1DatabaseLike;
 }
 
@@ -20,12 +23,14 @@ interface Context {
 
 // ─── UTILIDADES ───────────────────────────────────────────────────────────────
 
-const GEMINI_CONFIG = {
-  model: 'gemini-3.1-pro-preview',
+const VERTEX_CONFIG = {
   maxTokensInput: 120000,
   maxOutputTokens: 8192,
   temperature: 0.1,
 };
+
+const DEFAULT_VERTEX_PROJECT = 'lcv-ideas-and-software';
+const DEFAULT_VERTEX_LOCATION = 'global';
 
 function structuredLog(level: string, message: string, context = {}) {
   const logEntry = {
@@ -96,11 +101,8 @@ export const onRequestPost = async ({ request, env }: Context) => {
       if (rateLimitError) return rateLimitError;
     }
 
-    const envRec = env as unknown as Record<string, unknown>;
-    const candidate =
-      env?.GEMINI_API_KEY || envRec.GEMINI_APP_KEY || envRec['gemini-api-key'] || envRec['gemini-app-key'];
-    const apiKey = typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
-    if (!apiKey) {
+    const saKeyJson = typeof env?.VERTEX_SA_KEY === 'string' && env.VERTEX_SA_KEY.length > 0 ? env.VERTEX_SA_KEY : null;
+    if (!saKeyJson) {
       return jsonResponse({ ok: false, error: 'Serviço de IA indisponível.' }, 503);
     }
 
@@ -143,8 +145,12 @@ Regras de Extração e Conversão:
 5. Ignore Tesouro Selic e Tesouro Prefixado. Extraia apenas Tesouro IPCA+.
 6. Não retorne markdown, crases ou explicações. Apenas o array JSON.`;
 
-    const ai = new GoogleGenAI({ apiKey });
-    const modelName = GEMINI_CONFIG.model;
+    const ai = new VertexGenAI({
+      saKeyJson,
+      project: env?.VERTEX_PROJECT || DEFAULT_VERTEX_PROJECT,
+      location: env?.VERTEX_LOCATION || DEFAULT_VERTEX_LOCATION,
+    });
+    const modelName = await loadConfiguredOraculoModel(env?.BIGDATA_DB, 'modeloVision');
 
     const safetySettings = [
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -169,7 +175,7 @@ Regras de Extração e Conversão:
         ],
       });
       const inputTokens = countRes.totalTokens || 0;
-      if (inputTokens > GEMINI_CONFIG.maxTokensInput) {
+      if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
         structuredLog('error', 'Token limit exceeded in Vision', {
           endpoint: 'tesouro-ipca-vision',
           tokens: inputTokens,
@@ -204,12 +210,12 @@ Regras de Extração e Conversão:
           config: {
             systemInstruction: systemInstruction,
             responseMimeType: 'application/json',
-            temperature: GEMINI_CONFIG.temperature,
-            maxOutputTokens: GEMINI_CONFIG.maxOutputTokens,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            thinkingConfig: { thinkingBudgetTokens: 1024 } as any,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            safetySettings: safetySettings as any,
+            temperature: VERTEX_CONFIG.temperature,
+            maxOutputTokens: VERTEX_CONFIG.maxOutputTokens,
+            // Sem thinkingConfig: o REST v1 do Vertex rejeita thinkingBudgetTokens
+            // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
+            // comportamento efetivo (sem budget de thinking) é preservado.
+            safetySettings,
           },
         });
 
