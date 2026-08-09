@@ -58,19 +58,31 @@ describe('loadConfiguredOraculoModel', () => {
     expect(await loadConfiguredOraculoModel(dbWithConfig(null), 'modeloAnalise')).toBe(DEFAULT_ORACULO_MODEL);
   });
 
-  it('rejeita IDs fora da allowlist de publisher models validados no Vertex (fail-closed no padrão)', async () => {
+  it('respeita o seletor mesmo para IDs fora da tabela validada (modelos novos nunca são rebaixados na seleção)', async () => {
     expect(
       await loadConfiguredOraculoModel(
         dbWithConfig(JSON.stringify({ modeloAnalise: 'gemini-pro-latest' })),
         'modeloAnalise',
       ),
-    ).toBe(DEFAULT_ORACULO_MODEL);
+    ).toBe('gemini-pro-latest');
     expect(
-      await loadConfiguredOraculoModel(
-        dbWithConfig(JSON.stringify({ modeloVision: 'models/gemini-3.1-pro-preview' })),
-        'modeloVision',
-      ),
-    ).toBe(DEFAULT_ORACULO_MODEL);
+      await loadConfiguredOraculoModel(dbWithConfig(JSON.stringify({ modeloVision: 'gemini-9.9-ultra' })), 'modeloVision'),
+    ).toBe('gemini-9.9-ultra');
+  });
+
+  it('rejeita apenas IDs sintaticamente inválidos para o path da URL do Vertex (fail-safe no padrão)', async () => {
+    const malformados = [
+      'models/gemini-3.1-pro-preview',
+      'gemini 2.5 pro',
+      '../../../projects/outro',
+      'gemini:pro?x=1',
+      '-gemini-flash',
+    ];
+    for (const id of malformados) {
+      expect(await loadConfiguredOraculoModel(dbWithConfig(JSON.stringify({ modeloAnalise: id })), 'modeloAnalise')).toBe(
+        DEFAULT_ORACULO_MODEL,
+      );
+    }
   });
 
   it('aceita todos os nove publisher models validados', async () => {

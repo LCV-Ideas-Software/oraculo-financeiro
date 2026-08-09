@@ -3,9 +3,9 @@
 // Descrição: OCR multimodal via Vertex AI (service account OAuth, REST v1 global) — extrai lotes do Tesouro IPCA+ a partir de imagens/PDFs de extratos; modelo do seletor do admin (modeloVision; padrão gemini-3.1-pro-preview).
 // Alinhado ao padrão do analisar-ia.ts: retry, thought filtering, jsonResponse, safety BLOCK_ONLY_HIGH.
 
-import { loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
+import { DEFAULT_ORACULO_MODEL, loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
 import { type D1DatabaseLike, enforceRateLimit, jsonResponse, requireAllowedOrigin } from './_shared/security';
-import { VertexGenAI } from './_shared/vertex';
+import { VertexGenAI, VertexHttpError } from './_shared/vertex';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ Regras de Extração e Conversão:
       project: env?.VERTEX_PROJECT,
       location: env?.VERTEX_LOCATION || DEFAULT_VERTEX_LOCATION,
     });
-    const modelName = await loadConfiguredOraculoModel(env?.BIGDATA_DB, 'modeloVision');
+    let modelName = await loadConfiguredOraculoModel(env?.BIGDATA_DB, 'modeloVision');
 
     const safetySettings = [
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -247,6 +247,20 @@ Regras de Extração e Conversão:
           attempt: tentativa + 1,
           error: errMsg,
         });
+        // Seletor sempre respeitado: só quando o modelo selecionado está
+        // indisponível no Vertex (404) o transporte cai para o padrão validado,
+        // com tentativas renovadas. Dispara no máximo uma vez — após a troca,
+        // modelName === DEFAULT_ORACULO_MODEL.
+        if (error instanceof VertexHttpError && error.status === 404 && modelName !== DEFAULT_ORACULO_MODEL) {
+          structuredLog('warn', 'Modelo do seletor indisponível no Vertex — fallback para o padrão validado', {
+            endpoint: 'tesouro-ipca-vision',
+            selectedModel: modelName,
+            fallbackModel: DEFAULT_ORACULO_MODEL,
+          });
+          modelName = DEFAULT_ORACULO_MODEL;
+          tentativa = -1;
+          continue;
+        }
         if (tentativa === 1) {
           void logAiUsage(env?.BIGDATA_DB, {
             module: 'oraculo-vision-ocr',

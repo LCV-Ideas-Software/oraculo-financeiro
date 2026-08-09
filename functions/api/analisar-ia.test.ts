@@ -1,15 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { D1DatabaseLike } from './_shared/security';
 
-const runtime = vi.hoisted(() => ({
-  constructorOptions: [] as Record<string, unknown>[],
-  generateRequests: [] as Record<string, unknown>[],
-  countRequests: [] as Record<string, unknown>[],
-  generateText: '',
-  totalTokens: 100,
-}));
+const runtime = vi.hoisted(() => {
+  class MockVertexHttpError extends Error {
+    constructor(
+      message: string,
+      readonly status: number,
+    ) {
+      super(message);
+      this.name = 'VertexHttpError';
+    }
+  }
+  return {
+    constructorOptions: [] as Record<string, unknown>[],
+    generateRequests: [] as Record<string, unknown>[],
+    countRequests: [] as Record<string, unknown>[],
+    generateText: '',
+    totalTokens: 100,
+    generate404Models: [] as string[],
+    MockVertexHttpError,
+  };
+});
 
 vi.mock('./_shared/vertex', () => ({
+  VertexHttpError: runtime.MockVertexHttpError,
   VertexGenAI: class {
     constructor(options: Record<string, unknown>) {
       runtime.constructorOptions.push(options);
@@ -21,6 +35,12 @@ vi.mock('./_shared/vertex', () => ({
       },
       generateContent: async (request: Record<string, unknown>) => {
         runtime.generateRequests.push(request);
+        if (runtime.generate404Models.includes(request.model as string)) {
+          throw new runtime.MockVertexHttpError(
+            `Vertex generateContent falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
+            404,
+          );
+        }
         return {
           text: runtime.generateText,
           usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 20 },
@@ -91,6 +111,7 @@ beforeEach(() => {
   runtime.countRequests.length = 0;
   runtime.generateText = JSON.stringify(ANALISE_VALIDA);
   runtime.totalTokens = 100;
+  runtime.generate404Models.length = 0;
 });
 
 describe('/api/analisar-ia — transporte Vertex', () => {
@@ -138,6 +159,24 @@ describe('/api/analisar-ia — transporte Vertex', () => {
     const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) }));
     expect(res.status).toBe(200);
     expect(runtime.generateRequests[0]!.model).toBe('gemini-3.1-pro-preview');
+  });
+
+  it('respeita o seletor na 1ª chamada e cai no padrão validado quando o modelo selecionado está indisponível (404)', async () => {
+    runtime.generate404Models.push('gemini-9.9-ultra');
+    const db = createDb(JSON.stringify({ modeloAnalise: 'gemini-9.9-ultra' }));
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: db }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, analise: ANALISE_VALIDA });
+    // O seletor é sempre honrado primeiro; o fallback só entra após a indisponibilidade real.
+    expect(runtime.generateRequests.map((r) => r.model)).toEqual(['gemini-9.9-ultra', 'gemini-3.1-pro-preview']);
+  });
+
+  it('não entra em loop quando o próprio modelo padrão está indisponível (404)', async () => {
+    runtime.generate404Models.push('gemini-3.1-pro-preview');
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) }));
+    expect(res.status).toBe(500);
+    expect(runtime.generateRequests).toHaveLength(2);
   });
 
   it('retorna 413 quando a contagem de tokens excede o teto de entrada', async () => {
