@@ -91,6 +91,8 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, data: LOTES });
 
+    // Sem VERTEX_PROJECT no env, o handler não fixa projeto: o cliente deriva do project_id da SA.
+    expect(runtime.constructorOptions[0]!.project).toBeUndefined();
     const req = runtime.generateRequests[0]!;
     expect(req.model).toBe('gemini-2.5-flash');
     expect(req.contents).toEqual([

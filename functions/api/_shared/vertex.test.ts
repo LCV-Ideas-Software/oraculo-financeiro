@@ -275,6 +275,37 @@ describe('montagem das requisições REST do Vertex', () => {
     expect(res.totalTokens).toBe(570);
   });
 
+  it('deriva o project do project_id da SA quando options.project não é fornecido', async () => {
+    const sa = await makeTestSa('kid-derive');
+    const mock = makeFetchMock();
+    const ai = new VertexGenAI({ saKeyJson: sa.saJson, location: 'global', fetchImpl: mock.fetchImpl });
+    await ai.models.countTokens({ model: 'm', contents: 'oi' });
+    expect(mock.calls.api[0]!.url).toBe(
+      'https://aiplatform.googleapis.com/v1/projects/proj-x/locations/global/publishers/google/models/m:countTokens',
+    );
+  });
+
+  it('options.project explícito tem precedência sobre o project_id da SA', async () => {
+    const sa = await makeTestSa('kid-precedence');
+    const mock = makeFetchMock();
+    const ai = new VertexGenAI({
+      saKeyJson: sa.saJson,
+      project: 'projeto-explicito',
+      location: 'global',
+      fetchImpl: mock.fetchImpl,
+    });
+    await ai.models.countTokens({ model: 'm', contents: 'oi' });
+    expect(mock.calls.api[0]!.url).toContain('/projects/projeto-explicito/');
+  });
+
+  it('falha com erro diagnóstico quando nem options.project nem project_id existem', async () => {
+    const sa = await makeTestSa('kid-noproj');
+    const semProjeto = JSON.stringify({ ...JSON.parse(sa.saJson), project_id: undefined });
+    const mock = makeFetchMock();
+    const ai = new VertexGenAI({ saKeyJson: semProjeto, location: 'global', fetchImpl: mock.fetchImpl });
+    await expect(ai.models.countTokens({ model: 'm', contents: 'oi' })).rejects.toThrow(/VERTEX_PROJECT|project_id/u);
+  });
+
   it('passa adiante contents que já são Content[] com role e parts', async () => {
     const sa = await makeTestSa('kid-passthrough');
     const mock = makeFetchMock();

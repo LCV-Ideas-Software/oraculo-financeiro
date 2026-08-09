@@ -14,11 +14,13 @@ interface ServiceAccountKey {
   private_key: string;
   private_key_id: string;
   token_uri: string;
+  project_id?: string;
 }
 
 export interface VertexGenAIOptions {
   saKeyJson: string;
-  project: string;
+  /** Opcional: quando ausente, o project é derivado do project_id da própria service account. */
+  project?: string | undefined;
   location: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
@@ -352,7 +354,13 @@ export class VertexGenAI {
   ): Promise<unknown> {
     const sa = parseServiceAccountKey(this.options.saKeyJson);
     const token = await getAccessToken(sa, this.fetchImpl, this.now);
-    const { project, location } = this.options;
+    const { location } = this.options;
+    // Deploys de terceiros (forks) configuram apenas VERTEX_SA_KEY: sem project
+    // explícito, o correto é o projeto dono da própria service account.
+    const project = this.options.project || sa.project_id;
+    if (!project) {
+      throw new Error('Projeto Vertex indefinido: a service account não tem project_id e VERTEX_PROJECT não está configurado.');
+    }
     const url = `${this.baseUrl()}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:${verb}`;
     const res = await this.fetchImpl(url, {
       method: 'POST',

@@ -29,7 +29,6 @@ const VERTEX_CONFIG = {
   temperature: 0.1,
 };
 
-const DEFAULT_VERTEX_PROJECT = 'lcv-ideas-and-software';
 const DEFAULT_VERTEX_LOCATION = 'global';
 
 function structuredLog(level: string, message: string, context = {}) {
@@ -147,7 +146,8 @@ Regras de Extração e Conversão:
 
     const ai = new VertexGenAI({
       saKeyJson,
-      project: env?.VERTEX_PROJECT || DEFAULT_VERTEX_PROJECT,
+      // Sem VERTEX_PROJECT, o cliente deriva o project do project_id da SA (portável para forks).
+      project: env?.VERTEX_PROJECT,
       location: env?.VERTEX_LOCATION || DEFAULT_VERTEX_LOCATION,
     });
     const modelName = await loadConfiguredOraculoModel(env?.BIGDATA_DB, 'modeloVision');
