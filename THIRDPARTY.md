@@ -4,7 +4,6 @@
 |------------|--------|------------------|-------------|----------------|
 | @biomejs/biome | ^2.4.11 | MIT | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
-| @google/genai | ^1.48.0 | Apache-2.0 | Não | https://registry.npmjs.org/@google/genai |
 | @types/node | ^25.5.0 | MIT | Não | https://registry.npmjs.org/@types/node |
 | @types/react | ^19.2.14 | MIT | Não | https://registry.npmjs.org/@types/react |
 | @types/react-dom | ^19.2.3 | MIT | Não | https://registry.npmjs.org/@types/react-dom |

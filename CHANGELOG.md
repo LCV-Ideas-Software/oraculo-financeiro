@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [v01.11.00] - 2026-08-09
+
+**Migração do transporte de IA para o Vertex AI (Onda 3 do programa Gemini → Vertex).**
+
+### Alterado
+
+- Os dois endpoints de IA (`/api/analisar-ia` e `/api/tesouro-ipca-vision`) deixam de usar o SDK `@google/genai` com API key (`GEMINI_API_KEY`) e passam a chamar o Vertex AI REST v1 (endpoint global) com OAuth de service account (`VERTEX_SA_KEY`), via cliente próprio em `functions/api/_shared/vertex.ts` (JWT RS256 por WebCrypto, cache de token por identidade de chave, single-flight, validação sintática de VERTEX_LOCATION que mantém a origem sob googleapis.com sem lista de regiões que envelhece, e erros HTTP com status e operação de origem preservados — um 404 de publisher model é distinguível de falhas da mint OAuth).
+- Os seletores de modelo do módulo Oráculo no admin-app passam a ser honrados: `modeloAnalise` e `modeloVision` são lidos de `admin_module_configs` (`oraculo-config`) e usados exatamente como configurados (novo módulo `functions/api/_shared/oraculoModelConfig.ts`; validação apenas sintática do ID, que compõe a URL do Vertex). O fallback para `gemini-3.1-pro-preview` acontece somente quando o seletor está ausente/ilegível ou quando o Vertex responde 404 para o modelo selecionado (indisponível), com tentativas renovadas no modelo padrão. Antes, o modelo era fixo no código.
+- Entrada multimodal (imagem/PDF em `inlineData`) validada empiricamente no REST v1; o cliente normaliza o array misto de parts no formato `Content[]` exigido pela API.
+- `thinkingConfig: { thinkingBudgetTokens: 1024 }` não é mais enviado: o REST v1 rejeita o campo (400 Unknown name) e o v1beta o ignorava silenciosamente — o comportamento efetivo é preservado.
+- Middleware de Secrets Store resolve `VERTEX_SA_KEY` no lugar de `GEMINI_API_KEY`; CSP não referencia mais `generativelanguage.googleapis.com`.
+- Prompts (fiduciário e OCR), retry, telemetria (`ai_usage_logs`), rate limiting e persistência de auditoria permanecem inalterados.
+
+### Removido
+
+- Dependência `@google/genai` e o override órfão de `protobufjs` (a cadeia que o exigia saiu do lockfile).
+
 ## [v01.10.08] - 2026-07-21
 
 **Patch de segurança — corrige duas negações de serviço em dependências transitivas.**

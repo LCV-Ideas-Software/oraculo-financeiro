@@ -1,7 +1,7 @@
 {
   "name": "oraculo-financeiro",
-  "version": "1.10.8",
-  "description": "Oráculo Financeiro — dashboard de análise financeira (LCI/CDB, IPCA+, Tesouro Direto) com IA Gemini para análise contextual. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.",
+  "version": "1.11.0",
+  "description": "Oráculo Financeiro — dashboard de análise financeira (LCI/CDB, IPCA+, Tesouro Direto) com IA Gemini via Vertex AI para análise contextual. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.",
   "license": "AGPL-3.0-or-later",
   "author": "LCV Ideas & Software",
   "repository": {
@@ -31,7 +31,6 @@
     "format:public:check": "prettier --check \"**/index.html\""
   },
   "dependencies": {
-    "@google/genai": "^2.15.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -60,7 +59,6 @@
     "picomatch": "4.0.4",
     "undici": "6.24.0",
     "vite": "$vite",
-    "protobufjs": "7.6.5",
     "@babel/core": "7.29.6"
   }
 }
