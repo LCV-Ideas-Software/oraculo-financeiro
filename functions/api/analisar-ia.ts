@@ -244,6 +244,8 @@ const VERTEX_CONFIG = {
 };
 
 const DEFAULT_VERTEX_LOCATION = 'global';
+// Teto de espera por chamada Vertex (paridade com a frota); a mint OAuth tem teto próprio no cliente.
+const VERTEX_REQUEST_TIMEOUT_MS = 80_000;
 
 function structuredLog(level: string, message: string, context = {}) {
   const logEntry = {
@@ -352,7 +354,11 @@ export const onRequestPost = async ({ env, request }: Context) => {
 
     const _telStart = Date.now();
     try {
-      const countRes = await ai.models.countTokens({ model: modelName, contents: userPrompt });
+      const countRes = await ai.models.countTokens({
+        model: modelName,
+        contents: userPrompt,
+        config: { httpOptions: { timeout: 20_000 } },
+      });
       const inputTokens = countRes.totalTokens || 0;
       if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
         structuredLog('error', 'Token limit exceeded', { endpoint: 'analisar-ia', tokens: inputTokens });
@@ -378,6 +384,7 @@ export const onRequestPost = async ({ env, request }: Context) => {
             // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
             // comportamento efetivo (sem budget de thinking) é preservado.
             safetySettings,
+            httpOptions: { timeout: VERTEX_REQUEST_TIMEOUT_MS },
           },
         });
 

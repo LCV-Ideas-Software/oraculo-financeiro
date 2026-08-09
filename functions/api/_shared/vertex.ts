@@ -359,7 +359,9 @@ export class VertexGenAI {
     // explícito, o correto é o projeto dono da própria service account.
     const project = this.options.project || sa.project_id;
     if (!project) {
-      throw new Error('Projeto Vertex indefinido: a service account não tem project_id e VERTEX_PROJECT não está configurado.');
+      throw new Error(
+        'Projeto Vertex indefinido: a service account não tem project_id e VERTEX_PROJECT não está configurado.',
+      );
     }
     const url = `${this.baseUrl()}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:${verb}`;
     const res = await this.fetchImpl(url, {

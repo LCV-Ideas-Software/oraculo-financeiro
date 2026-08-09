@@ -127,6 +127,8 @@ npx wrangler d1 execute example_db --remote --file db/002_tesouro_ipca_lotes.sql
 
 Or run `npm run d1:setup` which wraps both.
 
+> **Note on AI model selectors.** The AI endpoints read the models configured in the LCV admin-app selectors from the `admin_module_configs` table (module key `oraculo-config`), which is provisioned and owned by the admin-app on the shared D1 database — it is not part of this repository's schema files. On a standalone deployment without that table, both endpoints simply fall back to the default model (`gemini-3.1-pro-preview`); nothing breaks.
+
 ### 5. Configure secrets
 
 ```bash

@@ -30,6 +30,8 @@ const VERTEX_CONFIG = {
 };
 
 const DEFAULT_VERTEX_LOCATION = 'global';
+// Teto de espera por chamada Vertex (paridade com a frota); a mint OAuth tem teto próprio no cliente.
+const VERTEX_REQUEST_TIMEOUT_MS = 80_000;
 
 function structuredLog(level: string, message: string, context = {}) {
   const logEntry = {
@@ -173,6 +175,7 @@ Regras de Extração e Conversão:
           },
           'Extraia os dados estruturados deste arquivo (imagem ou PDF).',
         ],
+        config: { httpOptions: { timeout: 20_000 } },
       });
       const inputTokens = countRes.totalTokens || 0;
       if (inputTokens > VERTEX_CONFIG.maxTokensInput) {
@@ -216,6 +219,7 @@ Regras de Extração e Conversão:
             // (400 Unknown name) e o v1beta o ignorava silenciosamente — o
             // comportamento efetivo (sem budget de thinking) é preservado.
             safetySettings,
+            httpOptions: { timeout: VERTEX_REQUEST_TIMEOUT_MS },
           },
         });
 

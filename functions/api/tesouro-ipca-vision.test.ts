@@ -105,6 +105,9 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
     // Decisão provada no Vertex REST v1: thinkingBudgetTokens é campo desconhecido (400).
     expect(config.thinkingConfig).toBeUndefined();
     expect(JSON.stringify(req)).not.toContain('thinking');
+    // Teto de espera nas chamadas Vertex (paridade com a frota: 20s count / 80s generate).
+    expect(config.httpOptions).toEqual({ timeout: 80_000 });
+    expect((runtime.countRequests[0]!.config as Record<string, unknown>).httpOptions).toEqual({ timeout: 20_000 });
 
     // O countTokens de pré-checagem também recebe o inlineData
     expect(runtime.countRequests[0]!.contents).toEqual([

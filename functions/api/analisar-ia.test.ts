@@ -129,6 +129,9 @@ describe('/api/analisar-ia — transporte Vertex', () => {
     // versão AI Studio é desconhecido da API (400 Unknown name) — não pode ser enviado.
     expect(config.thinkingConfig).toBeUndefined();
     expect(JSON.stringify(req)).not.toContain('thinking');
+    // Teto de espera nas chamadas Vertex (paridade com a frota: 20s count / 80s generate).
+    expect(config.httpOptions).toEqual({ timeout: 80_000 });
+    expect((runtime.countRequests[0]!.config as Record<string, unknown>).httpOptions).toEqual({ timeout: 20_000 });
   });
 
   it('cai no modelo padrão quando o seletor está vazio ou o config não existe', async () => {
