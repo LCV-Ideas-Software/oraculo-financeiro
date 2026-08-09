@@ -73,8 +73,9 @@ describe('loadConfiguredOraculoModel', () => {
     ).toBe(DEFAULT_ORACULO_MODEL);
   });
 
-  it('aceita todos os oito publisher models validados', async () => {
+  it('aceita todos os nove publisher models validados', async () => {
     const validados = [
+      'gemini-3.6-flash',
       'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
       'gemini-3.1-pro-preview',

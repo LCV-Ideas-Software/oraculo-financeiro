@@ -9,8 +9,10 @@ import type { D1DatabaseLike } from './security';
 export const DEFAULT_ORACULO_MODEL = 'gemini-3.1-pro-preview';
 
 // Publisher models do Vertex AI validados empiricamente (endpoint global,
-// generateContent/countTokens 200). Espelha a tabela validada na Onda 2.
+// generateContent/countTokens 200). Tabela da Onda 2 + gemini-3.6-flash
+// (validado 2026-08-09; teto declarado pela API: 1..65537-exclusivo).
 const ALLOWED_ORACULO_MODELS = new Set([
+  'gemini-3.6-flash',
   'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
   'gemini-3.1-pro-preview',
