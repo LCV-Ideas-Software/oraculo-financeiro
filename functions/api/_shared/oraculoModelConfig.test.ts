@@ -66,7 +66,10 @@ describe('loadConfiguredOraculoModel', () => {
       ),
     ).toBe('gemini-pro-latest');
     expect(
-      await loadConfiguredOraculoModel(dbWithConfig(JSON.stringify({ modeloVision: 'gemini-9.9-ultra' })), 'modeloVision'),
+      await loadConfiguredOraculoModel(
+        dbWithConfig(JSON.stringify({ modeloVision: 'gemini-9.9-ultra' })),
+        'modeloVision',
+      ),
     ).toBe('gemini-9.9-ultra');
   });
 
@@ -79,9 +82,9 @@ describe('loadConfiguredOraculoModel', () => {
       '-gemini-flash',
     ];
     for (const id of malformados) {
-      expect(await loadConfiguredOraculoModel(dbWithConfig(JSON.stringify({ modeloAnalise: id })), 'modeloAnalise')).toBe(
-        DEFAULT_ORACULO_MODEL,
-      );
+      expect(
+        await loadConfiguredOraculoModel(dbWithConfig(JSON.stringify({ modeloAnalise: id })), 'modeloAnalise'),
+      ).toBe(DEFAULT_ORACULO_MODEL);
     }
   });
 
