@@ -132,8 +132,8 @@ Or run `npm run d1:setup` which wraps both.
 ### 5. Configure secrets
 
 ```bash
-npx wrangler secret put VERTEX_SA_KEY --env production  # service-account JSON key (Vertex AI)
-npx wrangler secret put RESEND_APPKEY --env production  # only if using email feature
+npx wrangler pages secret put VERTEX_SA_KEY --project-name=oraculo-financeiro  # service-account JSON key (Vertex AI)
+npx wrangler pages secret put RESEND_APPKEY --project-name=oraculo-financeiro  # only if using email feature
 ```
 
 ### 6. Build + deploy
