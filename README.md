@@ -38,7 +38,7 @@ Aplicação para analisar e comparar produtos de renda fixa atrelados ao IPCA:
 
 1. **Coleta**: usuário registra LCIs/CDBs (taxa de juro real + vencimento + emissor + valor) e/ou consulta o Tesouro Direto.
 2. **Cálculo determinístico** (`functions/api/registros-lci-cdb.ts`, `functions/api/tesouro-ipca.ts`): cálculo de rentabilidade real, projeção até vencimento usando IPCA atual.
-3. **Análise por IA** (`functions/api/analisar-ia.ts`, `functions/api/auditorias-ia.ts`): Gemini 2.5 Pro recebe os números calculados + contexto macro e produz insights executivos sem invenção.
+3. **Análise por IA** (`functions/api/analisar-ia.ts`, `functions/api/auditorias-ia.ts`): o modelo Gemini configurado no seletor do admin (via Vertex AI; padrão `gemini-3.1-pro-preview`) recebe os números calculados + contexto macro e produz insights executivos sem invenção.
 4. **Cache + auditoria**: D1 mantém cache de taxa IPCA + registros do usuário + log de auditorias IA.
 5. **Cron Worker** (`workers/taxaipca-motor`): pre-warm diário (02h BRT) de cache IPCA+ a partir do CSV do Tesouro Transparente, garantindo que requests síncronos não dependam de fetch live.
 
@@ -79,7 +79,7 @@ You will need:
 - A Cloudflare account ([free tier](https://www.cloudflare.com/plans/)) with Pages + D1 + Workers enabled.
 - The Cloudflare CLI [`wrangler`](https://developers.cloudflare.com/workers/wrangler/).
 - Node.js 22+.
-- A Google AI Studio API key for Gemini integration.
+- A Google Cloud service account JSON key with Vertex AI access (the AI endpoints authenticate via `VERTEX_SA_KEY`).
 
 ### 1. Clone + install
 
