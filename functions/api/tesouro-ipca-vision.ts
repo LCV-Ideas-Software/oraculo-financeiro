@@ -1,5 +1,5 @@
 // Módulo: oraculo-financeiro/functions/api/tesouro-ipca-vision.ts
-// Versão: v01.11.00
+// Versão: v01.11.01
 // Descrição: OCR multimodal via Vertex AI (service account OAuth, REST v1 global) — extrai lotes do Tesouro IPCA+ a partir de imagens/PDFs de extratos; modelo do seletor do admin (modeloVision; padrão gemini-3.1-pro-preview).
 // Alinhado ao padrão do analisar-ia.ts: retry, thought filtering, jsonResponse, safety BLOCK_ONLY_HIGH.
 
@@ -270,7 +270,10 @@ Regras de Extração e Conversão:
             });
             return {
               kind: 'http-response',
-              response: jsonResponse({ ok: false, error: `Falha na requisição AI Gemini: ${errMsg}` }, 500),
+              // O detalhe do erro fica no structuredLog e no error_detail do logAiUsage:
+              // a mensagem do Vertex carrega project id, e-mail da service account e
+              // caminho do endpoint, que não podem sair na resposta ao cliente.
+              response: jsonResponse({ ok: false, error: 'Falha na requisição AI Gemini.' }, 500),
             };
           }
           await new Promise((r) => setTimeout(r, 800));

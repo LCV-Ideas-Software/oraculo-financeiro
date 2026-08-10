@@ -15,12 +15,13 @@
 
 **Oráculo Financeiro** — dashboard de análise financeira focado em renda fixa indexada à inflação (LCI/CDB com IPCA+, Tesouro IPCA+ etc.) com análise contextual via Gemini AI no Vertex AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store + Cron Worker auxiliar para pre-warming de cache de taxa.
 
-**Status.** Stable. Current release: **v01.11.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v01.11.01**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release         | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v01.11.01`** | **Upstream error detail no longer reaches the client.** The 500 body from both AI endpoints echoed the raw Vertex error, which carries the GCP project id, the service-account e-mail and the endpoint path; the body is now a stable message and the detail stays in `structuredLog` and in the `logAiUsage` telemetry. |
 | **`v01.11.00`** | **Vertex AI migration.** AI transport moves from the Gemini API key (`@google/genai`) to Vertex AI REST v1 with service-account OAuth (`VERTEX_SA_KEY`); both AI endpoints now honor the admin model selectors (`modeloAnalise`/`modeloVision`) as configured, falling back to the validated default only when the selected model is unavailable on Vertex (404). Prompts, retry, telemetry, and rate limiting unchanged. |
 | **`v01.10.08`** | **Dependency security patch.** Updates transitive `protobufjs` to 7.6.5 and `brace-expansion` to 5.0.7, resolving GHSA-j3f2-48v5-ccww and GHSA-3jxr-9vmj-r5cp without changing application APIs. |
 | **`v01.10.07`** | **4-gate quality directive compliance.** Added Biome scripts, deploy workflow coverage after eslint, scoped Biome to source/functions, and applied cosmetic source formatting plus safe callback cleanup required by the gate.                                                                                |

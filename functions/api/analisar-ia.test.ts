@@ -21,6 +21,7 @@ const runtime = vi.hoisted(() => {
     count404Models: [] as string[],
     generate404Models: [] as string[],
     generate404Operation: 'generateContent',
+    generateFailure: null as Error | null,
     MockVertexHttpError,
   };
 });
@@ -45,6 +46,7 @@ vi.mock('./_shared/vertex', () => ({
       },
       generateContent: async (request: Record<string, unknown>) => {
         runtime.generateRequests.push(request);
+        if (runtime.generateFailure) throw runtime.generateFailure;
         if (runtime.generate404Models.includes(request.model as string)) {
           throw new runtime.MockVertexHttpError(
             `Vertex generateContent falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
@@ -125,6 +127,7 @@ beforeEach(() => {
   runtime.count404Models.length = 0;
   runtime.generate404Models.length = 0;
   runtime.generate404Operation = 'generateContent';
+  runtime.generateFailure = null;
 });
 
 describe('/api/analisar-ia — transporte Vertex', () => {
@@ -231,6 +234,22 @@ describe('/api/analisar-ia — transporte Vertex', () => {
     const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) }));
     expect(res.status).toBe(413);
     expect(runtime.generateRequests).toHaveLength(0);
+  });
+
+  it('não devolve o detalhe do erro do Vertex no corpo da resposta 500', async () => {
+    runtime.generateFailure = new runtime.MockVertexHttpError(
+      'Vertex generateContent falhou (HTTP 403): Permission denied on resource project lcv-ideas-and-software; caller vertex-sa@lcv-ideas-and-software.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.',
+      403,
+      'generateContent',
+    );
+    const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) }));
+
+    expect(res.status).toBe(500);
+    const body = await res.text();
+    expect(body).not.toContain('lcv-ideas-and-software');
+    expect(body).not.toContain('iam.gserviceaccount.com');
+    expect(body).not.toContain('aiplatform.endpoints.predict');
+    expect(JSON.parse(body)).toEqual({ ok: false, error: 'Falha na requisição AI Gemini.' });
   });
 
   it('retorna 500 com excerto quando a resposta do modelo não é JSON', async () => {

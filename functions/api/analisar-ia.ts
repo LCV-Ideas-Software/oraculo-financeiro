@@ -1,5 +1,5 @@
 // Módulo: oraculo-financeiro/functions/api/analisar-ia.ts
-// Versão: v01.11.00
+// Versão: v01.11.01
 // Descrição: Migração para Vertex AI — service account OAuth (VERTEX_SA_KEY), REST v1 global, modelo do seletor do admin (modeloAnalise; padrão gemini-3.1-pro-preview), safetySettings e retry preservados. Prompt fiduciário preservado.
 
 import { DEFAULT_ORACULO_MODEL, loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
@@ -441,7 +441,10 @@ export const onRequestPost = async ({ env, request }: Context) => {
             });
             return {
               kind: 'http-response',
-              response: jsonResponse({ ok: false, error: `Falha na requisição AI Gemini: ${errMsg}` }, 500),
+              // O detalhe do erro fica no structuredLog e no error_detail do logAiUsage:
+              // a mensagem do Vertex carrega project id, e-mail da service account e
+              // caminho do endpoint, que não podem sair na resposta ao cliente.
+              response: jsonResponse({ ok: false, error: 'Falha na requisição AI Gemini.' }, 500),
             };
           }
           await new Promise((r) => setTimeout(r, 800));
