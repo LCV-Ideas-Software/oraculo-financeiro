@@ -20,6 +20,7 @@ const runtime = vi.hoisted(() => {
     totalTokens: 570,
     count404Models: [] as string[],
     generate404Models: [] as string[],
+    generateFailure: null as Error | null,
     MockVertexHttpError,
   };
 });
@@ -44,6 +45,7 @@ vi.mock('./_shared/vertex', () => ({
       },
       generateContent: async (request: Record<string, unknown>) => {
         runtime.generateRequests.push(request);
+        if (runtime.generateFailure) throw runtime.generateFailure;
         if (runtime.generate404Models.includes(request.model as string)) {
           throw new runtime.MockVertexHttpError(
             `Vertex generateContent falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
@@ -96,6 +98,7 @@ beforeEach(() => {
   runtime.totalTokens = 570;
   runtime.count404Models.length = 0;
   runtime.generate404Models.length = 0;
+  runtime.generateFailure = null;
 });
 
 describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
@@ -105,6 +108,27 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
     );
     expect(res.status).toBe(503);
     expect(runtime.generateRequests).toHaveLength(0);
+  });
+
+  it('não devolve o detalhe do erro do Vertex no corpo da resposta 500', async () => {
+    runtime.generateFailure = new runtime.MockVertexHttpError(
+      'Vertex generateContent falhou (HTTP 403): Permission denied on resource project lcv-ideas-and-software; caller vertex-sa@lcv-ideas-and-software.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.',
+      403,
+      'generateContent',
+    );
+    const res = await onRequestPost(
+      context(
+        { imageBase64: 'QUJD', mimeType: 'application/pdf' },
+        { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) },
+      ),
+    );
+
+    expect(res.status).toBe(500);
+    const body = await res.text();
+    expect(body).not.toContain('lcv-ideas-and-software');
+    expect(body).not.toContain('iam.gserviceaccount.com');
+    expect(body).not.toContain('aiplatform.endpoints.predict');
+    expect(JSON.parse(body)).toEqual({ ok: false, error: 'Falha na requisição AI Gemini.' });
   });
 
   it('retorna 400 sem imageBase64 ou mimeType', async () => {

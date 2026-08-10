@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [v01.11.01] - 2026-08-10
+
+### Segurança
+
+- **O detalhe do erro do Vertex deixa de sair na resposta ao cliente.** Em
+  `/api/analisar-ia` e `/api/tesouro-ipca-vision`, a falha de geração devolvia
+  `Falha na requisição AI Gemini: ${errMsg}` num corpo 500 — e a mensagem do
+  Vertex carrega o project id do GCP, o e-mail da service account e o caminho do
+  endpoint. O corpo agora é uma mensagem estável; o detalhe continua registrado
+  onde já estava, no `structuredLog` e no `error_detail` do `logAiUsage`.
+  Remanescente do R1 apontado na revisão do PR #198.
+
 ## [v01.11.00] - 2026-08-09
 
 **Migração do transporte de IA para o Vertex AI (Onda 3 do programa Gemini → Vertex).**
