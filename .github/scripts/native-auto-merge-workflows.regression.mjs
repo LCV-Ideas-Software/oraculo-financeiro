@@ -5,7 +5,7 @@ import test from "node:test";
 // Keep this outside Vitest's *.test.* discovery; CI invokes Node's runner directly.
 
 const NATIVE_REF =
-  "LCV-Ideas-Software/.github/native-auto-merge@faa9f91026f33adacc6b01643aad46bf3d841344 # native-auto-merge/v2.1.1";
+  "LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4";
 const ZIZMOR_REF =
   "LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@4058fad11eca7c2eb4e9296108667ef6199a6356 # zizmor/v2.0.0";
 const CODEQL_SARIF_REF =
@@ -62,7 +62,7 @@ function assertExactExpression(body, input, expression) {
   );
 }
 
-test("the trusted controller exposes both pinned v2.1.1 wake-up paths", () => {
+test("the trusted controller exposes both pinned v2.1.4 wake-up paths", () => {
   const events = topLevelBody(native, "on");
   const enable = jobBody(native, "enable");
 
@@ -88,9 +88,14 @@ test("the trusted controller exposes both pinned v2.1.1 wake-up paths", () => {
   );
 
   for (const [input, expression] of Object.entries({
+    workflow_name: "github.event.workflow_run.name",
     workflow_path: "github.event.workflow_run.path",
     workflow_display_title: "github.event.workflow_run.display_title",
+    workflow_status: "github.event.workflow_run.status",
+    workflow_event: "github.event.workflow_run.event",
+    workflow_head_sha: "github.event.workflow_run.head_sha",
     workflow_actor_id: "github.event.workflow_run.actor.id",
+    workflow_pull_requests: "toJSON(github.event.workflow_run.pull_requests)",
     event_action: "github.event.action",
     pull_number: "github.event.pull_request.number",
     pull_head_sha: "github.event.pull_request.head.sha",
@@ -121,7 +126,7 @@ test("the existing Dependency Review context becomes the clean merge-group gate"
     candidate,
     /actions\/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294/,
   );
-  assert.match(required, /name: Dependency Review/);
+  assert.match(required, /^ {4}name: Dependency Review$/m);
   assert.match(required, /always\(\)/);
   assert.match(
     required,
