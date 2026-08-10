@@ -48,6 +48,20 @@ function jobBody(workflow, jobName) {
   return lines.slice(start + 1, end).join("\n");
 }
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function assertExactExpression(body, input, expression) {
+  assert.match(
+    body,
+    new RegExp(
+      `\\n\\s+${escapeRegex(input)}: \\$\\{\\{ ${escapeRegex(expression)} \\}\\}`,
+    ),
+    `${input} must bind exactly to ${expression}`,
+  );
+}
+
 test("the trusted controller exposes both pinned v2.1.1 wake-up paths", () => {
   const events = topLevelBody(native, "on");
   const enable = jobBody(native, "enable");
@@ -73,23 +87,19 @@ test("the trusted controller exposes both pinned v2.1.1 wake-up paths", () => {
     /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
   );
 
-  for (const input of [
-    "workflow_path",
-    "workflow_display_title",
-    "workflow_actor_id",
-    "event_action",
-    "pull_number",
-    "pull_head_sha",
-    "pull_head_repository",
-    "pull_base_ref",
-    "requested_reviewer_id",
-    "trigger_run_id",
-  ]) {
-    assert.match(
-      enable,
-      new RegExp(`\\n\\s+${input}:`),
-      `${input} must be bound`,
-    );
+  for (const [input, expression] of Object.entries({
+    workflow_path: "github.event.workflow_run.path",
+    workflow_display_title: "github.event.workflow_run.display_title",
+    workflow_actor_id: "github.event.workflow_run.actor.id",
+    event_action: "github.event.action",
+    pull_number: "github.event.pull_request.number",
+    pull_head_sha: "github.event.pull_request.head.sha",
+    pull_head_repository: "github.event.pull_request.head.repo.full_name",
+    pull_base_ref: "github.event.pull_request.base.ref",
+    requested_reviewer_id: "github.event.requested_reviewer.id",
+    trigger_run_id: "github.run_id",
+  })) {
+    assertExactExpression(enable, input, expression);
   }
 
   assert.doesNotMatch(
@@ -112,7 +122,11 @@ test("the existing Dependency Review context becomes the clean merge-group gate"
     /actions\/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294/,
   );
   assert.match(required, /name: Dependency Review/);
-  assert.match(required, /if: \$\{\{ always\(\) \}\}/);
+  assert.match(required, /always\(\)/);
+  assert.match(
+    required,
+    /github\.event_name == 'merge_group'[\s\S]*github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+  );
   assert.match(required, /needs:[\s\S]*- candidate_review/);
   assert.match(required, /timeout-minutes: 30/);
   assert.match(
@@ -121,19 +135,15 @@ test("the existing Dependency Review context becomes the clean merge-group gate"
   );
   assert.match(required, /operation: merge-group-feedback-gate/);
   assert.match(required, /github_token: \$\{\{ github\.token \}\}/);
-  for (const input of [
-    "event_repository",
-    "event_action",
-    "merge_group_head_sha",
-    "merge_group_base_sha",
-    "merge_group_base_ref",
-    "merge_group_head_ref",
-  ]) {
-    assert.match(
-      required,
-      new RegExp(`\\n\\s+${input}:`),
-      `${input} must be bound`,
-    );
+  for (const [input, expression] of Object.entries({
+    event_repository: "github.event.repository.full_name",
+    event_action: "github.event.action",
+    merge_group_head_sha: "github.event.merge_group.head_sha",
+    merge_group_base_sha: "github.event.merge_group.base_sha",
+    merge_group_base_ref: "github.event.merge_group.base_ref",
+    merge_group_head_ref: "github.event.merge_group.head_ref",
+  })) {
+    assertExactExpression(required, input, expression);
   }
   assert.match(
     required,

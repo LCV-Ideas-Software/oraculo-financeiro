@@ -42,7 +42,14 @@ jobs:
   dependency_review:
     permissions: write-all
     name: Dependency Review
-    if: ${{ always() }}
+    if: >-
+      ${{
+        always() &&
+        (
+          github.event_name == 'merge_group' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        )
+      }}
     needs:
       - candidate_review
     runs-on: ubuntu-latest
