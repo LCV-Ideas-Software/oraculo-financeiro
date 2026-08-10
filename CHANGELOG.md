@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [v01.11.02] - 2026-08-10
+
+### Segurança
+
+- **A fixture dos testes da v01.11.01 deixa de commitar o project id real do
+  GCP.** Ao provar que o detalhe do Vertex não sai na resposta, o teste gravou
+  o project id de produção e um endereço de service account no repositório —
+  que é público. As fixtures passam a usar identificadores sintéticos
+  (`exemplo-projeto-000`) e a asserção fica mais forte: além dos tokens
+  isolados, verifica a ausência da mensagem upstream inteira. Achado do Copilot
+  na revisão do PR #202.
+
 ## [v01.11.01] - 2026-08-10
 
 ### Segurança

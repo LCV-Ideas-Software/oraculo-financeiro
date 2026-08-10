@@ -69,6 +69,12 @@ const LOTES = [
   { dataCompra: '2026-03-03', valorInvestido: 1011.09, taxaContratada: 7.59 },
 ];
 
+// Identificadores sintéticos de propósito: a fixture reproduz o FORMATO da mensagem
+// do Vertex (project id + service account + permissão), nunca o inventário real —
+// que é justamente o que este teste garante não sair na resposta.
+const SYNTHETIC_PROJECT_ID = 'exemplo-projeto-000';
+const VERTEX_UPSTREAM_DETAIL = `Vertex generateContent falhou (HTTP 403): Permission denied on resource project ${SYNTHETIC_PROJECT_ID}; caller sa-exemplo@${SYNTHETIC_PROJECT_ID}.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.`;
+
 const createDb = (configJson: string | null): D1DatabaseLike => ({
   prepare: (query: string) => {
     const isModuleConfig = query.includes('admin_module_configs');
@@ -111,11 +117,7 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
   });
 
   it('não devolve o detalhe do erro do Vertex no corpo da resposta 500', async () => {
-    runtime.generateFailure = new runtime.MockVertexHttpError(
-      'Vertex generateContent falhou (HTTP 403): Permission denied on resource project lcv-ideas-and-software; caller vertex-sa@lcv-ideas-and-software.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.',
-      403,
-      'generateContent',
-    );
+    runtime.generateFailure = new runtime.MockVertexHttpError(VERTEX_UPSTREAM_DETAIL, 403, 'generateContent');
     const res = await onRequestPost(
       context(
         { imageBase64: 'QUJD', mimeType: 'application/pdf' },
@@ -125,7 +127,8 @@ describe('/api/tesouro-ipca-vision — transporte Vertex multimodal', () => {
 
     expect(res.status).toBe(500);
     const body = await res.text();
-    expect(body).not.toContain('lcv-ideas-and-software');
+    expect(body).not.toContain(VERTEX_UPSTREAM_DETAIL);
+    expect(body).not.toContain(SYNTHETIC_PROJECT_ID);
     expect(body).not.toContain('iam.gserviceaccount.com');
     expect(body).not.toContain('aiplatform.endpoints.predict');
     expect(JSON.parse(body)).toEqual({ ok: false, error: 'Falha na requisição AI Gemini.' });

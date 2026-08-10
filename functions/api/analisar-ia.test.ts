@@ -97,6 +97,12 @@ const PAYLOAD_LCI = {
   benchmarkDescricao: 'acima da mediana',
 };
 
+// Identificadores sintéticos de propósito: a fixture reproduz o FORMATO da mensagem
+// do Vertex (project id + service account + permissão), nunca o inventário real —
+// que é justamente o que este teste garante não sair na resposta.
+const SYNTHETIC_PROJECT_ID = 'exemplo-projeto-000';
+const VERTEX_UPSTREAM_DETAIL = `Vertex generateContent falhou (HTTP 403): Permission denied on resource project ${SYNTHETIC_PROJECT_ID}; caller sa-exemplo@${SYNTHETIC_PROJECT_ID}.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.`;
+
 const createDb = (configJson: string | null): D1DatabaseLike => ({
   prepare: (query: string) => {
     const isModuleConfig = query.includes('admin_module_configs');
@@ -237,16 +243,13 @@ describe('/api/analisar-ia — transporte Vertex', () => {
   });
 
   it('não devolve o detalhe do erro do Vertex no corpo da resposta 500', async () => {
-    runtime.generateFailure = new runtime.MockVertexHttpError(
-      'Vertex generateContent falhou (HTTP 403): Permission denied on resource project lcv-ideas-and-software; caller vertex-sa@lcv-ideas-and-software.iam.gserviceaccount.com lacks aiplatform.endpoints.predict.',
-      403,
-      'generateContent',
-    );
+    runtime.generateFailure = new runtime.MockVertexHttpError(VERTEX_UPSTREAM_DETAIL, 403, 'generateContent');
     const res = await onRequestPost(context(PAYLOAD_LCI, { VERTEX_SA_KEY: '{"sa":"x"}', BIGDATA_DB: createDb(null) }));
 
     expect(res.status).toBe(500);
     const body = await res.text();
-    expect(body).not.toContain('lcv-ideas-and-software');
+    expect(body).not.toContain(VERTEX_UPSTREAM_DETAIL);
+    expect(body).not.toContain(SYNTHETIC_PROJECT_ID);
     expect(body).not.toContain('iam.gserviceaccount.com');
     expect(body).not.toContain('aiplatform.endpoints.predict');
     expect(JSON.parse(body)).toEqual({ ok: false, error: 'Falha na requisição AI Gemini.' });
