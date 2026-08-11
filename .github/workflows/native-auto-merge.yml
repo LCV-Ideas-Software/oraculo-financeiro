@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Enable GitHub native auto-merge
         if: ${{ github.event_name == 'workflow_run' }}
-        uses: LCV-Ideas-Software/.github/native-auto-merge@faa9f91026f33adacc6b01643aad46bf3d841344 # native-auto-merge/v2.1.1
+        uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
         with:
           automation_token: ${{ secrets.LCV_AUTOMATION_TOKEN }}
           event_repository: ${{ github.event.repository.full_name }}
@@ -54,7 +54,7 @@ jobs:
           workflow_pull_requests: ${{ toJSON(github.event.workflow_run.pull_requests) }}
       - name: Reconcile requested Copilot review
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: LCV-Ideas-Software/.github/native-auto-merge@faa9f91026f33adacc6b01643aad46bf3d841344 # native-auto-merge/v2.1.1
+        uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
         with:
           automation_token: ${{ secrets.LCV_AUTOMATION_TOKEN }}
           event_repository: ${{ github.event.repository.full_name }}
