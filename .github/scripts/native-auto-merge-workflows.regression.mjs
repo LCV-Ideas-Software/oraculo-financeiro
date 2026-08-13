@@ -6,8 +6,30 @@ import test from "node:test";
 
 const NATIVE_REF =
   "LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4";
-const ZIZMOR_REF =
-  "LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@4058fad11eca7c2eb4e9296108667ef6199a6356 # zizmor/v2.0.0";
+const ZIZMOR_RELEASE_REF =
+  /^ {4}uses: LCV-Ideas-Software\/\.github\/\.github\/workflows\/zizmor\.yml@([0-9a-f]{40}) # zizmor\/v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/gm;
+const EXPECTED_ZIZMOR_WRAPPER = `name: Zizmor
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+    types:
+      - checks_requested
+  schedule:
+    - cron: "43 5 * * 1"
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  zizmor:
+    name: Run zizmor
+    permissions: write-all
+    uses: <SIGNED_ZIZMOR_RELEASE>
+`;
 const CODEQL_SARIF_REF =
   "LCV-Ideas-Software/.github/codeql-sarif-gate@24b0bcc09a48b47f740b8a8bd972374f7289e48e # codeql-sarif-gate/v1.0.0";
 
@@ -59,6 +81,22 @@ function assertExactExpression(body, input, expression) {
       `\\n\\s+${escapeRegex(input)}: \\$\\{\\{ ${escapeRegex(expression)} \\}\\}`,
     ),
     `${input} must bind exactly to ${expression}`,
+  );
+}
+
+function assertZizmorReleaseReference(workflow) {
+  const normalized = workflow.replaceAll("\r\n", "\n");
+  const releaseRefs = [...normalized.matchAll(ZIZMOR_RELEASE_REF)];
+  assert.equal(
+    releaseRefs.length,
+    1,
+    "the Zizmor workflow must use exactly one full-SHA component release reference",
+  );
+  assert.equal(releaseRefs[0][1].length, 40);
+  assert.equal(
+    normalized.replace(ZIZMOR_RELEASE_REF, "    uses: <SIGNED_ZIZMOR_RELEASE>"),
+    EXPECTED_ZIZMOR_WRAPPER,
+    "the canonical Zizmor wrapper contract changed",
   );
 }
 
@@ -169,12 +207,28 @@ test("the privileged-trigger exception documents both trusted paths", () => {
 });
 
 test("internal reusable Actions identify their component release families", () => {
-  assert.match(
-    zizmorWorkflow,
-    new RegExp(ZIZMOR_REF.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
-  );
+  assertZizmorReleaseReference(zizmorWorkflow);
   assert.match(
     codeqlWorkflow,
     new RegExp(CODEQL_SARIF_REF.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+  );
+});
+
+test("the Zizmor boundary rejects YAML-escaped duplicate references", () => {
+  const escapedDuplicate = `${zizmorWorkflow}\n  duplicate:\n    uses: "LCV-Ideas-Software\\x2F.github\\x2F.github\\x2Fworkflows\\x2Fzizmor.yml@main"\n`;
+  assert.throws(
+    () => assertZizmorReleaseReference(escapedDuplicate),
+    /canonical Zizmor wrapper contract changed/,
+  );
+});
+
+test("the Zizmor boundary rejects leading-zero release versions", () => {
+  const leadingZero = zizmorWorkflow.replace(
+    /# zizmor\/v(?=[0-9])/,
+    "# zizmor/v0",
+  );
+  assert.throws(
+    () => assertZizmorReleaseReference(leadingZero),
+    /full-SHA component release reference/,
   );
 });
