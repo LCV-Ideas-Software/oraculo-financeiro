@@ -2,6 +2,7 @@ name: Deploy
 on:
   push:
     branches: [main]
+permissions: {}
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NODE_OPTIONS: "--no-deprecation"
@@ -13,7 +14,8 @@ jobs:
     name: Deploy application
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      contents: read
     environment: cloudflare-production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,7 +29,8 @@ jobs:
       - name: Install and verify latest Wrangler
         id: wrangler
         shell: bash
-        run: | # zizmor: ignore[adhoc-packages] Wrangler latest is an explicit organization policy; signatures are verified below.
+        run:
+          | # zizmor: ignore[adhoc-packages] Wrangler latest is an explicit organization policy; signatures are verified below.
           set -euo pipefail
           wrangler_prefix="$RUNNER_TEMP/wrangler-latest"
           effective_registry="$(npm config get registry --prefix "$wrangler_prefix")"
@@ -98,4 +101,3 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     timeout-minutes: 30
-permissions: write-all

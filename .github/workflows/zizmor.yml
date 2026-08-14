@@ -12,10 +12,13 @@ on:
     - cron: "43 5 * * 1"
   workflow_dispatch:
 
-permissions: write-all
+permissions: {}
 
 jobs:
   zizmor:
     name: Run zizmor
-    permissions: write-all
-    uses: LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@67ecbebba92a6973f889114d4b0d64596519a94f # zizmor/v2.3.0
+    permissions:
+      actions: read # Inspect workflow metadata during the central audit.
+      contents: read
+      security-events: write # Upload the Zizmor SARIF analysis.
+    uses: LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@f90943a06122468b316c05bb88403d2df451b9f8 # zizmor/v2.3.1

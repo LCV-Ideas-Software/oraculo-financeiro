@@ -7,10 +7,11 @@ on:
   merge_group:
     types:
       - checks_requested
-permissions: write-all
+permissions: {}
 jobs:
   prettier-public:
-    permissions: write-all
+    permissions:
+      contents: read
     name: Check index.html formatting
     environment: ci-automation
     runs-on: ubuntu-latest

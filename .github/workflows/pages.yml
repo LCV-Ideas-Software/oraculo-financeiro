@@ -6,13 +6,16 @@ on:
       - ".github/workflows/pages.yml"
       - "site/**"
   workflow_dispatch:
-permissions: write-all
+permissions: {}
 concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
   deploy:
-    permissions: write-all
+    permissions:
+      contents: read
+      id-token: write # Authenticate the Pages deployment through OIDC.
+      pages: write # Publish the GitHub Pages deployment.
     name: Deploy GitHub Pages
     runs-on: ubuntu-latest
     environment:

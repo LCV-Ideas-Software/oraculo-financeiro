@@ -12,12 +12,14 @@ on:
 concurrency:
   group: scorecard-${{ github.ref }}
   cancel-in-progress: true
-permissions: write-all
+permissions: {}
 
 jobs:
   scorecard:
     name: OpenSSF Scorecard
-    permissions: write-all
+    permissions:
+      contents: read
+      security-events: write # Upload the Scorecard SARIF analysis.
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,8 +30,7 @@ jobs:
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
-          # OpenSSF's publication API rejects workflows with organization-mandated write-all.
-          # SARIF and artifacts remain enabled below.
+          # Keep results within GitHub code scanning and the short-lived artifact below.
           publish_results: false
       - name: Upload SARIF artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

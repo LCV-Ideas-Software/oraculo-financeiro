@@ -19,7 +19,7 @@ on:
   schedule:
     - cron: "41 * * * *"
   workflow_dispatch:
-permissions: write-all
+permissions: {}
 concurrency:
   group: auto-release-${{ github.ref }}
   queue: max
@@ -32,7 +32,10 @@ jobs:
     name: Create universal-format tag + GitHub Release if APP_VERSION was bumped
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      actions: read # Inspect the required push workflow runs before publishing.
+      contents: write # Create the immutable tag and GitHub Release.
+      security-events: read # Verify the exact CodeQL analyses before publishing.
     steps:
       - name: Checkout main with full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

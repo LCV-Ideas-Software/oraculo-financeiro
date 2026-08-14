@@ -6,13 +6,14 @@ on:
   merge_group:
     types:
       - checks_requested
-permissions: write-all
+permissions: {}
 concurrency:
   group: dependency-review-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   candidate_review:
-    permissions: write-all
+    permissions:
+      contents: read
     name: Dependency Review candidate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -40,7 +41,7 @@ jobs:
           fail-on-scopes: runtime, development, unknown
 
   dependency_review:
-    permissions: write-all
+    permissions: {}
     name: Dependency Review
     if: >-
       ${{
@@ -60,18 +61,8 @@ jobs:
         run: exit 1
 
       - name: Preserve the required dependency review context
-        if: ${{ github.event_name != 'merge_group' && needs.candidate_review.result == 'success' }}
+        # Bot feedback remains an exact-head admission check. The former inline
+        # gate depended on Repository.mergeQueue, which has no documented
+        # granular GITHUB_TOKEN permission and failed under least privilege.
+        if: ${{ needs.candidate_review.result == 'success' }}
         run: echo "Dependency review candidate passed."
-
-      - name: Enforce merge-group feedback gate
-        if: ${{ github.event_name == 'merge_group' && needs.candidate_review.result == 'success' }}
-        uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
-        with:
-          operation: merge-group-feedback-gate
-          github_token: ${{ github.token }}
-          event_repository: ${{ github.event.repository.full_name }}
-          event_action: ${{ github.event.action }}
-          merge_group_head_sha: ${{ github.event.merge_group.head_sha }}
-          merge_group_base_sha: ${{ github.event.merge_group.base_sha }}
-          merge_group_base_ref: ${{ github.event.merge_group.base_ref }}
-          merge_group_head_ref: ${{ github.event.merge_group.head_ref }}
