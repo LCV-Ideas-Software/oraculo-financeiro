@@ -17,6 +17,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "projects:boundaries": "node --test .github/scripts/add-to-project-workflow.regression.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
