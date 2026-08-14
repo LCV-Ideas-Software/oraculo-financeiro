@@ -23,6 +23,8 @@ jobs:
           persist-credentials: false
       - name: Test native auto-merge workflow boundaries
         run: node --test .github/scripts/native-auto-merge-workflows.regression.mjs
+      - name: Test projects automation workflow boundaries
+        run: node --test .github/scripts/add-to-project-workflow.regression.mjs
       - name: Review pull request dependencies
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
