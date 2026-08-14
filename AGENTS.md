@@ -19,8 +19,9 @@ auxiliary Cron Worker for rate-cache pre-warming. Source lives in `src/`.
 ```bash
 npm test
 npm run lint
-npm run format:public:check
+npm run biome
 npm run build
+npm run format:public:check
 npm run projects:boundaries
 ```
 
