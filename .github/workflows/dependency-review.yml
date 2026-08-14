@@ -52,19 +52,20 @@ jobs:
       }}
     needs:
       - candidate_review
+      - projects_workflow_boundaries
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Reject unsuccessful dependency review candidate
-        if: ${{ needs.candidate_review.result != 'success' }}
+        if: ${{ needs.candidate_review.result != 'success' || needs.projects_workflow_boundaries.result != 'success' }}
         run: exit 1
 
       - name: Preserve the required dependency review context
-        if: ${{ github.event_name != 'merge_group' && needs.candidate_review.result == 'success' }}
+        if: ${{ github.event_name != 'merge_group' && needs.candidate_review.result == 'success' && needs.projects_workflow_boundaries.result == 'success' }}
         run: echo "Dependency review candidate passed."
 
       - name: Enforce merge-group feedback gate
-        if: ${{ github.event_name == 'merge_group' && needs.candidate_review.result == 'success' }}
+        if: ${{ github.event_name == 'merge_group' && needs.candidate_review.result == 'success' && needs.projects_workflow_boundaries.result == 'success' }}
         uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
         with:
           operation: merge-group-feedback-gate
