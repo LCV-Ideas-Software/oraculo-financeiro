@@ -21,6 +21,7 @@ npm test
 npm run lint
 npm run format:public:check
 npm run build
+npm run projects:boundaries
 ```
 
 ## Workspace Policy
