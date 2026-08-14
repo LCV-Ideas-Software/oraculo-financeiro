@@ -23,8 +23,6 @@ jobs:
           persist-credentials: false
       - name: Test native auto-merge workflow boundaries
         run: node --test .github/scripts/native-auto-merge-workflows.regression.mjs
-      - name: Test projects automation workflow boundaries
-        run: node --test .github/scripts/add-to-project-workflow.regression.mjs
       - name: Review pull request dependencies
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
@@ -77,3 +75,18 @@ jobs:
           merge_group_base_sha: ${{ github.event.merge_group.base_sha }}
           merge_group_base_ref: ${{ github.event.merge_group.base_ref }}
           merge_group_head_ref: ${{ github.event.merge_group.head_ref }}
+
+  projects_workflow_boundaries:
+    name: Projects workflow boundaries
+    # Sem gate de origem: a assercao do invariante privilegiado roda para TODO PR,
+    # inclusive de fork (evento sem secrets), e tambem no merge_group.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test projects automation workflow boundaries
+        run: node --test .github/scripts/add-to-project-workflow.regression.mjs
