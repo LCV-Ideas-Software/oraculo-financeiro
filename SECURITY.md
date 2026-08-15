@@ -2,7 +2,7 @@
 
 ## Supported status
 
-Latest supported release: v01.11.02. The current main branch is also supported for security fixes until the next release is published.
+Current supported internal application version: APP v01.11.02. The current `main` branch and its deployed revision are supported for security fixes.
 
 ## Reporting a vulnerability
 
@@ -17,7 +17,7 @@ If GitHub private vulnerability reporting is enabled for this repository, that c
 Please include:
 
 - affected repository, component, route, package, workflow, or public surface;
-- affected version, release tag, commit SHA, or deployment URL when known;
+- affected internal application version, commit SHA, or deployment URL when known;
 - impact and exploitability;
 - reproduction steps or a safe proof of concept, if available;
 - whether any credential, personal data, payment data, private editorial material, or operational secret may be involved.

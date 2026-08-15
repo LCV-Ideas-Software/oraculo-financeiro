@@ -1,44 +1,53 @@
 name: Public Format
+
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
   merge_group:
     types:
       - checks_requested
-permissions: write-all
+
+permissions: {}
+
+concurrency:
+  group: public-format-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prettier-public:
-    permissions: write-all
     name: Check index.html formatting
-    environment: ci-automation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
-      - name: Checkout
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Setup Node.js 24
+
+      - name: Set up Node.js 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           check-latest: true
           cache: npm
+
+      - name: Verify npm registry
+        shell: bash
+        run: test "$(npm config get registry)" = "https://registry.npmjs.org/"
+
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Check public page formatting
-        run: npm run format:public:check
-      - name: Lint application
-        run: npm run lint
-      - name: Check Biome policy
-        run: npm run biome
-      - name: Run tests
-        run: npm test
-      - name: Build production application
-        run: npm run build
-    timeout-minutes: 30
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  queue: max
-  cancel-in-progress: false
+
+      - name: Validate application
+        run: |
+          npm run format:public:check
+          npm run lint
+          npm run biome
+          npm test
+          npm run build

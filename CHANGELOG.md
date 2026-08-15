@@ -2,9 +2,17 @@
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- Governanca de trabalho sobre GitHub Projects, Issues e Discussions: quadro dedicado do repositorio, formularios de issue para Incident, Maintenance e Spike, atalhos para Discussions no seletor de issues, workflow `add-to-project` (inerte ate a organizacao definir `LCV_PROJECTS_APP_CLIENT_ID`; gatilho `pull_request_target` sem checkout nem execucao de codigo do PR, para alcancar PRs de fork com o secret do environment (cobertura de PRs do Dependabot nao e garantida por este gatilho: fica decidida por sonda na ativacao e, se necessario, por reconciliacao em evento confiavel), com excecao estreita e documentada do zizmor) e o ritual de registro G1..G4 versionado em `AGENTS.md` e `CLAUDE.md` para Claude Code e ChatGPT-Codex.
+- Dependencias de desenvolvimento atualizadas, incluindo `typescript-eslint` 8.67.0 e Wrangler 4.123.0; o override vulneravel que rebaixava `undici` foi removido e o pacote raiz agora e explicitamente privado.
+- CodeQL, Dependency Review, Zizmor, OpenSSF Scorecard, GitHub Pages e deploy Cloudflare passam a usar apenas implementacoes oficiais com permissoes minimas e referencias externas fixadas por SHA.
+- Os dois arquivos Wrangler passam a versionar o identificador autorizado da D1 existente. O UUID identifica o recurso, mas nao concede acesso; tokens e credenciais continuam em Secrets.
+- O controle de versao permanece interno em `APP v01.11.02`, inclusive no rodape. Este web app deixa de criar Releases e tags do GitHub; objetos historicos ficam transitorios ate a limpeza posterior ao deploy validado.
+- O Auto-add nativo dos Projects #10 e #17 substitui a automacao de inclusao mantida no repositorio, preservando o ritual G1..G4 em `AGENTS.md` e `CLAUDE.md`.
+
+### Removed
+
+- Native Auto-merge, Auto-release, add-to-project, gate SARIF, reusable Zizmor, manifestos por blob, validadores de fronteira e bootstrap D1 proprios foram aposentados; nenhuma camada customizada equivalente os substitui.
 
 ## [v01.11.02] - 2026-08-10
 

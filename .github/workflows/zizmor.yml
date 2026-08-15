@@ -1,21 +1,33 @@
-name: Zizmor
+name: GitHub Actions Security Analysis with zizmor 🌈
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
-  merge_group:
-    types:
-      - checks_requested
-  schedule:
-    - cron: "43 5 * * 1"
-  workflow_dispatch:
+    branches:
+      - main
 
-permissions: write-all
+permissions: {}
+
+concurrency:
+  group: zizmor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   zizmor:
     name: Run zizmor
-    permissions: write-all
-    uses: LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@67ecbebba92a6973f889114d4b0d64596519a94f # zizmor/v2.3.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write # Upload Zizmor results to code scanning.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          version: "1.29.0"
