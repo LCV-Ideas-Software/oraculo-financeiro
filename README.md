@@ -5,7 +5,6 @@
 # oraculo-financeiro
 
 [![status: stable](https://img.shields.io/badge/status-stable-brightgreen.svg)](#status)
-[![release](https://img.shields.io/github/v/release/LCV-Ideas-Software/oraculo-financeiro?sort=semver)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/releases)
 [![Deploy](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/deploy.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/deploy.yml)
 [![Pages](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/pages.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/pages.yml)
 [![CodeQL](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/codeql.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/codeql.yml)
@@ -15,11 +14,11 @@
 
 **Oráculo Financeiro** — dashboard de análise financeira focado em renda fixa indexada à inflação (LCI/CDB com IPCA+, Tesouro IPCA+ etc.) com análise contextual via Gemini AI no Vertex AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store + Cron Worker auxiliar para pre-warming de cache de taxa.
 
-**Status.** Stable. Current release: **v01.11.02**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current internal application version: **APP v01.11.02**. See [CHANGELOG.md](./CHANGELOG.md) for the full application history. This web app does not create new GitHub Releases or version tags; legacy objects, if visible during the migration window, are transitional.
 
 The version history at a glance:
 
-| Release         | Scope                                                                                                                                                                                                                                                                                                                                                             |
+| Internal version | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`v01.11.02`** | **Test fixtures no longer commit the real GCP project id.** The v01.11.01 regression tests proved the Vertex detail stays out of responses by hardcoding the actual project id and a service-account address into this public repository; fixtures now use synthetic identifiers and additionally assert that the whole upstream message is absent. |
 | **`v01.11.01`** | **Upstream error detail no longer reaches the client.** The 500 body from both AI endpoints echoed the raw Vertex error, which carries the GCP project id, the service-account e-mail and the endpoint path; the body is now a stable message and the detail stays in `structuredLog` and in the `logAiUsage` telemetry. |
@@ -94,14 +93,14 @@ npm ci
 ### 2. Create your D1 database
 
 ```bash
-npx wrangler d1 create example_db
+npx --no-install wrangler d1 create example_db
 # wrangler outputs:
 #   database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
 ### 3. Wire the database_id into both wrangler.json files
 
-Replace the placeholder `00000000-0000-0000-0000-000000000000` in:
+Replace both the production `database_name` and `database_id` with the values for your own database in:
 
 - `wrangler.json` (Pages app at root)
 - `workers/taxaipca-motor/wrangler.json` (Cron Worker — same D1 binding)
@@ -118,39 +117,35 @@ Replace the placeholder `00000000-0000-0000-0000-000000000000` in:
 }
 ```
 
-There is also a helper script `npm run d1:setup` that automates wrangler.json mutation + schema apply for fresh forks.
-
 ### 4. Apply schema
 
 ```bash
-npx wrangler d1 execute example_db --remote --file db/001_init.sql
-npx wrangler d1 execute example_db --remote --file db/002_tesouro_ipca_lotes.sql
+npx --no-install wrangler d1 execute example_db --remote --file db/001_init.sql
+npx --no-install wrangler d1 execute example_db --remote --file db/002_tesouro_ipca_lotes.sql
 ```
-
-Or run `npm run d1:setup` which wraps both.
 
 > **Note on AI model selectors.** The AI endpoints read the models configured in the LCV admin-app selectors from the `admin_module_configs` table (module key `oraculo-config`), which is provisioned and owned by the admin-app on the shared D1 database — it is not part of this repository's schema files. On a standalone deployment without that table, both endpoints simply fall back to the default model (`gemini-3.1-pro-preview`); nothing breaks.
 
 ### 5. Configure secrets
 
 ```bash
-npx wrangler pages secret put VERTEX_SA_KEY --project-name=oraculo-financeiro  # service-account JSON key (Vertex AI)
-npx wrangler pages secret put RESEND_APPKEY --project-name=oraculo-financeiro  # only if using email feature
+npx --no-install wrangler pages secret put VERTEX_SA_KEY --project-name=oraculo-financeiro  # service-account JSON key (Vertex AI)
+npx --no-install wrangler pages secret put RESEND_APPKEY --project-name=oraculo-financeiro  # only if using email feature
 ```
 
 ### 6. Build + deploy
 
 ```bash
 npm run build
-npx wrangler pages deploy dist --project-name=oraculo-financeiro
-npx wrangler deploy --config workers/taxaipca-motor/wrangler.json
+npx --no-install wrangler pages deploy dist --project-name=oraculo-financeiro
+npx --no-install wrangler deploy --config workers/taxaipca-motor/wrangler.json
 ```
 
 The Pages app and the Cron Worker are deployed independently but share the same D1 binding.
 
 ## CI deploy (this repo)
 
-This repo's [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push to `main`. Steps: setup-node 24 → npm install + build → `jq` substitution to inject `D1_DATABASE_ID` from secret into BOTH `wrangler.json` files (root + `workers/taxaipca-motor/`) → `wrangler pages deploy` (Pages) → `wrangler deploy --config workers/taxaipca-motor/wrangler.json` (Cron Worker). Real D1 ID kept out of git, lives only as a GitHub Actions secret.
+This repo's [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push to `main`. It validates the application and then uses the official Cloudflare Wrangler Action, pinned by full SHA, to deploy Pages and the Cron Worker. Both `wrangler.json` files version the same D1 identifier; Cloudflare API credentials remain protected in the `cloudflare-production` environment.
 
 ## Repository conventions
 
