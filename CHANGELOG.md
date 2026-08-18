@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Decidido
+
+- **Ferramental de lint consolidado por decisão do operador (17/08/2026, issue
+  #212): o Biome PERMANECE como gate obrigatório de CI**, ao lado do ESLint. A
+  direção declarada na v01.09.00 ("ESLint fica como único enforcer de hook
+  deps, Biome fica só como formatter") está **superada**: o arranjo vigente —
+  ESLint (`npm run lint`, com `eslint-plugin-react-hooks` como enforcer de
+  hook deps) E Biome (`npm run biome`, lint+format) como gates do `deploy.yml`
+  — é o desenho intencional, não contradição. Os dois cobrem classes de
+  problema distintas e o custo de manter ambos é um passo de CI.
+
 ### Changed
 
 - Dependencias de desenvolvimento atualizadas, incluindo `typescript-eslint` 8.67.0 e Wrangler 4.123.0; o override vulneravel que rebaixava `undici` foi removido e o pacote raiz agora e explicitamente privado.
