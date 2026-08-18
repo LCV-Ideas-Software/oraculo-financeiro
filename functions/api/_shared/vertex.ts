@@ -93,6 +93,28 @@ export class VertexHttpError extends Error {
   }
 }
 
+/**
+ * Reduz um erro do caminho de IA a um detalhe de vocabulário CONSTANTE, seguro
+ * para structuredLog e para o error_detail persistido no D1. A mensagem crua do
+ * Vertex carrega project id, e-mail da service account e caminho do endpoint —
+ * nada dela é ecoado: a classificação usa só campos estruturados nossos
+ * (status/operation do VertexHttpError, name do erro) e prefixos de mensagens
+ * que ESTE código constrói antes de qualquer conteúdo do provedor.
+ */
+export function sanitizeAiErrorDetail(error: unknown): string {
+  if (error instanceof VertexHttpError) {
+    return `vertex_${error.operation}_http_${error.status}`;
+  }
+  if (error instanceof Error) {
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') return 'timeout';
+    if (error.message.startsWith('VERTEX_SA_KEY')) return 'sa_key_config_invalida';
+    if (error.message.startsWith('Resposta do token endpoint sem access_token')) return 'oauth_token_ausente';
+    if (error.message.startsWith('Gemini retornou resposta vazia')) return 'resposta_vazia';
+    return `erro_nao_classificado_${error.name}`;
+  }
+  return 'erro_nao_error';
+}
+
 const OAUTH_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const OAUTH_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 const JWT_LIFETIME_S = 3600; // máximo permitido pelo fluxo server-to-server do Google
