@@ -2,7 +2,7 @@
 
 | Componente | Versão | Licença Original | Modificado? | Link de Origem |
 |------------|--------|------------------|-------------|----------------|
-| @biomejs/biome | ^2.5.7 | MIT | Não | https://registry.npmjs.org/@biomejs/biome |
+| @biomejs/biome | ^2.5.7 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
 | @types/node | ^26.2.0 | MIT | Não | https://registry.npmjs.org/@types/node |
 | @types/react | ^19.2.18 | MIT | Não | https://registry.npmjs.org/@types/react |
