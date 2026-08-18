@@ -51,6 +51,10 @@ jobs:
           npm test
           npm run build
           npm run format:public:check
+          # Gate do inventário legal (issue #215): cópias idênticas E fiéis ao
+          # package.json/lockfile (nomes, versões e licenças) — igualdade mútua
+          # sozinha deixaria as duas envelhecerem juntas.
+          node scripts/verify-thirdparty.mjs
 
       - name: Deploy Pages application with Wrangler
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
