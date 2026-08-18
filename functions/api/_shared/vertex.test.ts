@@ -520,9 +520,9 @@ describe('sanitizeAiErrorDetail', () => {
   });
 
   it('classifica erro de configuracao da SA key por prefixo, sem ecoar o campo', () => {
-    expect(sanitizeAiErrorDetail(new Error('VERTEX_SA_KEY inválido: campo obrigatório ausente ou vazio: private_key'))).toBe(
-      'sa_key_config_invalida',
-    );
+    expect(
+      sanitizeAiErrorDetail(new Error('VERTEX_SA_KEY inválido: campo obrigatório ausente ou vazio: private_key')),
+    ).toBe('sa_key_config_invalida');
   });
 
   it('classifica resposta vazia do modelo', () => {
