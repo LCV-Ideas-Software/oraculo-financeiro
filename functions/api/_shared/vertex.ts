@@ -110,7 +110,10 @@ export function sanitizeAiErrorDetail(error: unknown): string {
     if (error.message.startsWith('VERTEX_SA_KEY')) return 'sa_key_config_invalida';
     if (error.message.startsWith('Resposta do token endpoint sem access_token')) return 'oauth_token_ausente';
     if (error.message.startsWith('Gemini retornou resposta vazia')) return 'resposta_vazia';
-    return `erro_nao_classificado_${error.name}`;
+    // Error.name é GRAVÁVEL: só atravessa se casar com um identificador
+    // estrito (sem @, :, /, espaço) — um name envenenado vira o rótulo fixo.
+    const safeName = /^[A-Za-z][A-Za-z0-9]{0,39}$/u.test(error.name) ? error.name : 'desconhecido';
+    return `erro_nao_classificado_${safeName}`;
   }
   return 'erro_nao_error';
 }

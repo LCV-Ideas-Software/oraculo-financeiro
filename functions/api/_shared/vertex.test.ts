@@ -544,6 +544,13 @@ describe('sanitizeAiErrorDetail', () => {
     expect(sanitizeAiErrorDetail(err)).toBe('erro_nao_classificado_TypeError');
   });
 
+  it('um Error.name envenenado (gravavel) nao atravessa - vira o rotulo fixo', () => {
+    const err = new Error('qualquer');
+    err.name = 'sa@exemplo-projeto-000.iam.gserviceaccount.com: 403';
+    expect(sanitizeAiErrorDetail(err)).toBe('erro_nao_classificado_desconhecido');
+    expect(sanitizeAiErrorDetail(err)).not.toMatch(/@|gserviceaccount|403/u);
+  });
+
   it('trata lancamentos que nem sao Error', () => {
     expect(sanitizeAiErrorDetail('string qualquer com segredo-de-teste')).toBe('erro_nao_error');
     expect(sanitizeAiErrorDetail(undefined)).toBe('erro_nao_error');

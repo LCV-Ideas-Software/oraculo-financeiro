@@ -211,9 +211,10 @@ Regras de Extração e Conversão:
         }
       } catch (countError) {
         if (signalModelUnavailable && isModelUnavailable(countError)) return { kind: 'model-unavailable' };
+        // A mint OAuth roda dentro do countTokens: o erro cru carrega SA/endpoint.
         structuredLog('warn', 'Token count failed in Vision', {
           endpoint: 'tesouro-ipca-vision',
-          error: String(countError),
+          error: sanitizeAiErrorDetail(countError),
         });
       }
 

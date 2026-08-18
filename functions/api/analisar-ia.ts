@@ -385,7 +385,11 @@ export const onRequestPost = async ({ env, request }: Context) => {
         }
       } catch (countError) {
         if (signalModelUnavailable && isModelUnavailable(countError)) return { kind: 'model-unavailable' };
-        structuredLog('warn', 'Token count failed', { endpoint: 'analisar-ia', error: String(countError) });
+        // A mint OAuth roda dentro do countTokens: o erro cru carrega SA/endpoint.
+        structuredLog('warn', 'Token count failed', {
+          endpoint: 'analisar-ia',
+          error: sanitizeAiErrorDetail(countError),
+        });
       }
 
       for (let tentativa = 0; tentativa < 2; tentativa++) {
