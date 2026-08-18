@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VertexGenAI, VertexHttpError } from './vertex';
+import { sanitizeAiErrorDetail, VertexGenAI, VertexHttpError } from './vertex';
 
 const te = new TextEncoder();
 
@@ -504,5 +504,55 @@ describe('regressão workerd e erros diagnósticos', () => {
       fetchImpl: mock.fetchImpl,
     });
     await expect(partial.models.countTokens({ model: 'm', contents: 'x' })).rejects.toThrow(/private_key/u);
+  });
+});
+
+describe('sanitizeAiErrorDetail', () => {
+  it('reduz VertexHttpError a operacao + status numerico, sem a mensagem do provedor', () => {
+    const err = new VertexHttpError(
+      'Vertex generateContent falhou (HTTP 403): {"error":{"message":"Permission denied on projects/proj-x by sa@exemplo-projeto-000.iam.gserviceaccount.com"}}',
+      403,
+      'generateContent',
+    );
+    const detail = sanitizeAiErrorDetail(err);
+    expect(detail).toBe('vertex_generateContent_http_403');
+    expect(detail).not.toMatch(/proj-x|gserviceaccount|Permission/u);
+  });
+
+  it('classifica erro de configuracao da SA key por prefixo, sem ecoar o campo', () => {
+    expect(
+      sanitizeAiErrorDetail(new Error('VERTEX_SA_KEY inválido: campo obrigatório ausente ou vazio: private_key')),
+    ).toBe('sa_key_config_invalida');
+  });
+
+  it('classifica resposta vazia do modelo', () => {
+    expect(sanitizeAiErrorDetail(new Error('Gemini retornou resposta vazia.'))).toBe('resposta_vazia');
+    expect(
+      sanitizeAiErrorDetail(new Error('Gemini retornou resposta vazia ou bloqueada pelos filtros de segurança.')),
+    ).toBe('resposta_vazia');
+  });
+
+  it('classifica timeout/abort pelo name do erro', () => {
+    const abort = new Error('The operation was aborted for https://endpoint-interno.exemplo.com');
+    abort.name = 'AbortError';
+    expect(sanitizeAiErrorDetail(abort)).toBe('timeout');
+    expect(sanitizeAiErrorDetail(abort)).not.toMatch(/endpoint-interno/u);
+  });
+
+  it('nunca ecoa a mensagem de um erro desconhecido - so o name da classe', () => {
+    const err = new TypeError('fetch failed: https://url-interna.exemplo.com com token xoxb-token-de-teste');
+    expect(sanitizeAiErrorDetail(err)).toBe('erro_nao_classificado_TypeError');
+  });
+
+  it('um Error.name envenenado (gravavel) nao atravessa - vira o rotulo fixo', () => {
+    const err = new Error('qualquer');
+    err.name = 'sa@exemplo-projeto-000.iam.gserviceaccount.com: 403';
+    expect(sanitizeAiErrorDetail(err)).toBe('erro_nao_classificado_desconhecido');
+    expect(sanitizeAiErrorDetail(err)).not.toMatch(/@|gserviceaccount|403/u);
+  });
+
+  it('trata lancamentos que nem sao Error', () => {
+    expect(sanitizeAiErrorDetail('string qualquer com segredo-de-teste')).toBe('erro_nao_error');
+    expect(sanitizeAiErrorDetail(undefined)).toBe('erro_nao_error');
   });
 });

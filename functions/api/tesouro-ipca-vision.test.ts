@@ -27,6 +27,11 @@ const runtime = vi.hoisted(() => {
 
 vi.mock('./_shared/vertex', () => ({
   VertexHttpError: runtime.MockVertexHttpError,
+  // Espelha a semantica do sanitizador real sobre a classe MOCK (instanceof).
+  sanitizeAiErrorDetail: (error: unknown) =>
+    error instanceof runtime.MockVertexHttpError
+      ? `vertex_${error.operation}_http_${error.status}`
+      : 'erro_nao_classificado_mock',
   VertexGenAI: class {
     constructor(options: Record<string, unknown>) {
       runtime.constructorOptions.push(options);

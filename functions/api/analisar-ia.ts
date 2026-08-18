@@ -4,7 +4,7 @@
 
 import { DEFAULT_ORACULO_MODEL, loadConfiguredOraculoModel } from './_shared/oraculoModelConfig';
 import { type D1DatabaseLike, enforceRateLimit, jsonResponse, requireAllowedOrigin } from './_shared/security';
-import { VertexGenAI, VertexHttpError } from './_shared/vertex';
+import { sanitizeAiErrorDetail, VertexGenAI, VertexHttpError } from './_shared/vertex';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -385,7 +385,11 @@ export const onRequestPost = async ({ env, request }: Context) => {
         }
       } catch (countError) {
         if (signalModelUnavailable && isModelUnavailable(countError)) return { kind: 'model-unavailable' };
-        structuredLog('warn', 'Token count failed', { endpoint: 'analisar-ia', error: String(countError) });
+        // A mint OAuth roda dentro do countTokens: o erro cru carrega SA/endpoint.
+        structuredLog('warn', 'Token count failed', {
+          endpoint: 'analisar-ia',
+          error: sanitizeAiErrorDetail(countError),
+        });
       }
 
       for (let tentativa = 0; tentativa < 2; tentativa++) {
@@ -423,11 +427,13 @@ export const onRequestPost = async ({ env, request }: Context) => {
           throw new Error('Gemini retornou resposta vazia.');
         } catch (error) {
           if (signalModelUnavailable && isModelUnavailable(error)) return { kind: 'model-unavailable' };
-          const errMsg = error instanceof Error ? error.message : String(error);
+          // R1 do PR #198 (issue #234): a mensagem crua do Vertex carrega
+          // project id, e-mail da SA e endpoint — nem log nem D1 a recebem.
+          const errDetail = sanitizeAiErrorDetail(error);
           structuredLog('warn', 'Falha ao requisitar Gemini', {
             endpoint: 'analisar-ia',
             attempt: tentativa + 1,
-            error: errMsg,
+            error: errDetail,
           });
           if (tentativa === 1) {
             void logAiUsage(env?.BIGDATA_DB, {
@@ -437,7 +443,7 @@ export const onRequestPost = async ({ env, request }: Context) => {
               output_tokens: 0,
               latency_ms: Date.now() - _telStart,
               status: 'error',
-              error_detail: errMsg.slice(0, 200),
+              error_detail: errDetail,
             });
             return {
               kind: 'http-response',
