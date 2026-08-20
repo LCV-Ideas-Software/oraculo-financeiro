@@ -13,7 +13,7 @@
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
 | eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks |
 | eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
-| globals | ^17.10.0 | MIT | Não | https://registry.npmjs.org/globals |
+| globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals |
 | lucide-react | ^1.31.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
