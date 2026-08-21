@@ -2,7 +2,7 @@
 
 ## Supported status
 
-Current supported internal application version: APP v01.11.02. The current `main` branch and its deployed revision are supported for security fixes.
+Current supported internal application version: APP v01.11.03. The current `main` branch and its deployed revision are supported for security fixes.
 
 ## Reporting a vulnerability
 

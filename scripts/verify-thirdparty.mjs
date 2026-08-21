@@ -23,7 +23,11 @@ const manifest = { ...pkg.dependencies, ...pkg.devDependencies };
 
 const rows = new Map();
 for (const match of root.matchAll(/^\| ([^ |]+) \| ([^ |]+) \| ([^|]+) \|/gm)) {
-  if (match[1] !== 'Componente') rows.set(match[1], { version: match[2], license: match[3].trim() });
+  if (match[1] === 'Componente') continue;
+  // Duplicata é erro, não sobrescrita: a segunda linha mascararia a primeira
+  // e o gate validaria só a última ocorrência (PR #235).
+  if (rows.has(match[1])) fail(`linha duplicada na tabela para ${match[1]}`);
+  rows.set(match[1], { version: match[2], license: match[3].trim() });
 }
 if (rows.size === 0) fail('nenhuma linha de componente encontrada na tabela');
 
@@ -32,8 +36,13 @@ for (const [name, version] of Object.entries(manifest)) {
   if (!row) fail(`dependência sem linha na tabela: ${name}`);
   if (row.version !== version)
     fail(`versão divergente para ${name}: tabela=${row.version} package.json=${version}`);
+  // Fail-closed (PR #235): dependência sem entrada ou sem campo license no
+  // lockfile escapava da comparação por optional chaining — num gate de
+  // inventário legal, ausência de dado é falha, não passe livre.
   const locked = lock.packages?.[`node_modules/${name}`];
-  if (locked?.license && row.license !== locked.license)
+  if (!locked) fail(`dependência sem entrada no lockfile: ${name}`);
+  if (!locked.license) fail(`entrada do lockfile sem licença declarada: ${name}`);
+  if (row.license !== locked.license)
     fail(`licença divergente para ${name}: tabela=${row.license} lockfile=${locked.license}`);
 }
 for (const name of rows.keys()) {

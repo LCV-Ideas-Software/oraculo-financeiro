@@ -5,7 +5,7 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import './Notification.css';
 
 type NotificationTone = 'success' | 'error' | 'info' | 'warning';
@@ -72,8 +72,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Objeto de contexto estável: sem o memo, cada toast (setItems) criava um
+  // value novo e re-renderizava todos os consumidores (thread do PR #1).
+  const value = useMemo(() => ({ showNotification }), [showNotification]);
+
   return (
-    <NotificationContext.Provider value={{ showNotification }}>
+    <NotificationContext.Provider value={value}>
       {children}
       <div className="notification-container">
         {items.map((item) => {
