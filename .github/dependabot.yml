@@ -43,7 +43,9 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
-    versioning-strategy: increase
+    # Evita alterar o manifesto quando o range atual já admite a release;
+    # o lockfile avança sem dessincronizar o inventário legal exato.
+    versioning-strategy: increase-if-necessary
     ignore:
       # typescript-eslint 8.66.0 supports TypeScript only below 6.1.0.
       - dependency-name: "typescript"
