@@ -25,6 +25,29 @@
 
 - Native Auto-merge, Auto-release, add-to-project, gate SARIF, reusable Zizmor, manifestos por blob, validadores de fronteira e bootstrap D1 proprios foram aposentados; nenhuma camada customizada equivalente os substitui.
 
+## [v01.11.03] - 2026-08-20
+
+### Corrigido
+
+- **O gate de inventario legal (`verify-thirdparty`) vira fail-closed.** Linha
+  duplicada na tabela sobrescrevia a anterior em silencio e dependencia sem
+  entrada (ou sem campo `license`) no lockfile escapava da comparacao de
+  licenca por optional chaining. Ambos agora falham, com suite propria de
+  cenarios sinteticos. Threads do Codex no PR #235.
+- **O rotulo de erro nao classificado do Vertex usa vocabulario fixo.** A regex
+  de identificador aceitava qualquer `Error.name` alfanumerico forjado, que
+  virava rotulo de cardinalidade arbitraria no log e na telemetria D1; apenas
+  os names de erro nativos atravessam. Thread do Codex no PR #236.
+- **`htmlToPlainText` preserva quebras estruturais.** A extracao por
+  `textContent` puro colapsava paragrafos, listas e cabecalhos da analise da
+  IA numa linha so; tags estruturais viram quebras antes do parse, com
+  fallback sem DOM robusto a tags aninhadas e teste unitario proprio
+  (`src/lib/html-to-plain-text.ts`). Mesma classe corrigida no admin-app.
+  Thread do Copilot no PR #1.
+- **O contexto de notificacao memoiza seu value.** Cada toast criava um objeto
+  de contexto novo e re-renderizava todos os consumidores; o Provider agora
+  publica um value estavel via `useMemo`. Thread do Copilot no PR #1.
+
 ## [v01.11.02] - 2026-08-10
 
 ### Segurança

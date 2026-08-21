@@ -551,6 +551,18 @@ describe('sanitizeAiErrorDetail', () => {
     expect(sanitizeAiErrorDetail(err)).not.toMatch(/@|gserviceaccount|403/u);
   });
 
+  it('um name identificador porem fora do vocabulario nativo tambem vira o rotulo fixo', () => {
+    // Threads do PR #236: a regex de identificador aceitava QUALQUER token
+    // alfanumerico, entao um name forjado passava ao log/D1 com cardinalidade
+    // arbitraria. Apenas os names de erro nativos atravessam.
+    const err = new Error('qualquer');
+    err.name = 'PayloadForjadoQualquer';
+    expect(sanitizeAiErrorDetail(err)).toBe('erro_nao_classificado_desconhecido');
+    const range = new Error('qualquer');
+    range.name = 'RangeError';
+    expect(sanitizeAiErrorDetail(range)).toBe('erro_nao_classificado_RangeError');
+  });
+
   it('trata lancamentos que nem sao Error', () => {
     expect(sanitizeAiErrorDetail('string qualquer com segredo-de-teste')).toBe('erro_nao_error');
     expect(sanitizeAiErrorDetail(undefined)).toBe('erro_nao_error');
