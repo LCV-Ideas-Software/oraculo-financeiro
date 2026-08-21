@@ -14,7 +14,7 @@ const SCRIPT = resolve(__dirname, 'verify-thirdparty.mjs');
 
 interface Fixture {
   tableRows: string[];
-  packages: Record<string, { license?: string }>;
+  packages: Record<string, { license?: string; version?: string }>;
   manifest?: Record<string, string>;
 }
 
@@ -56,6 +56,25 @@ describe('verify-thirdparty', () => {
       packages: { 'pacote-a': { license: 'MIT' } },
     });
     expect(result.status).toBe(0);
+  });
+
+  it('aceita uma versão resolvida nova quando o requisito do manifesto não muda', () => {
+    const result = runFixture({
+      tableRows: ['| pacote-a | ^1.0.0 | MIT |'],
+      packages: { 'pacote-a': { version: '1.2.3', license: 'MIT' } },
+      manifest: { 'pacote-a': '^1.0.0' },
+    });
+    expect(result.status).toBe(0);
+  });
+
+  it('continua falhando se a licença mudar dentro do mesmo requisito', () => {
+    const result = runFixture({
+      tableRows: ['| pacote-a | ^1.0.0 | MIT |'],
+      packages: { 'pacote-a': { version: '1.2.3', license: 'Apache-2.0' } },
+      manifest: { 'pacote-a': '^1.0.0' },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/licen.*divergente/u);
   });
 
   it('falha quando a tabela tem linha duplicada para o mesmo componente', () => {
