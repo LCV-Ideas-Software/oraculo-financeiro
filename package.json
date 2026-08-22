@@ -24,7 +24,8 @@
     "biome": "biome check .",
     "biome:write": "biome check --write .",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:official-actions",
+    "test:official-actions": "node --test scripts/official-actions-contract.mjs",
     "format": "biome format --write src",
     "format:public": "prettier --write \"**/index.html\"",
     "format:public:check": "prettier --check \"**/index.html\""
