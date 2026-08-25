@@ -15,7 +15,7 @@
 
 ### Changed
 
-- O Linear Release passa a usar a action oficial da Linear v0.16.0, fixada por SHA, sem alterar o gatilho pós-Deploy, o SHA efetivamente publicado nem o comportamento best-effort. Um teste de contrato também preserva os dois deploys oficiais do Wrangler e registra que não há envio direto ao Slack neste repositório.
+- O Linear Release passa a usar a action oficial da Linear v0.16.0, fixada por SHA, sem alterar o gatilho pós-Deploy nem o SHA efetivamente publicado. A fila usa `queue: max`, e falhas da action tornam o workflow vermelho. Um teste de contrato também preserva os dois deploys oficiais do Wrangler e registra que não há envio direto ao Slack neste repositório.
 - Dependencias de desenvolvimento atualizadas, incluindo `typescript-eslint` 8.67.0 e Wrangler 4.123.0; o override vulneravel que rebaixava `undici` foi removido e o pacote raiz agora e explicitamente privado.
 - CodeQL, Dependency Review, Zizmor, OpenSSF Scorecard, GitHub Pages e deploy Cloudflare passam a usar apenas implementacoes oficiais com permissoes minimas e referencias externas fixadas por SHA.
 - Os dois arquivos Wrangler passam a versionar o identificador autorizado da D1 existente. O UUID identifica o recurso, mas nao concede acesso; tokens e credenciais continuam em Secrets.
