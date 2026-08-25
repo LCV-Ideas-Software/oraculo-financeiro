@@ -27,6 +27,9 @@ const deploy = read(".github/workflows/deploy.yml");
 const actionsLock = read(".github/workflows/actions.lock");
 const packageJson = JSON.parse(read("package.json"));
 const packageLock = JSON.parse(read("package-lock.json"));
+const installedWrangler = JSON.parse(
+  read("node_modules/wrangler/package.json"),
+);
 const allWorkflows = readdirSync(workflowsDirectory)
   .filter((file) => /\.ya?ml$/u.test(file))
   .map((file) => read(path.join(".github", "workflows", file)))
@@ -87,21 +90,27 @@ test("Linear Release uses the pinned official action and lock entry", () => {
 
 test("both Cloudflare deploys remain on the official Wrangler action", () => {
   const officialUse = `cloudflare/wrangler-action@${WRANGLER_ACTION_SHA}`;
+  const installCommand = "npm ci --ignore-scripts --no-audit --no-fund";
+  const installIndex = deploy.indexOf(installCommand);
+  const firstActionIndex = deploy.indexOf(officialUse);
+  const wranglerVersion = packageJson.devDependencies.wrangler;
+  const lockRootVersion = packageLock.packages[""].devDependencies.wrangler;
+  const lockedWrangler = packageLock.packages["node_modules/wrangler"];
 
   assert.equal(occurrences(deploy, officialUse), 2);
-  assert.equal(occurrences(deploy, 'wranglerVersion: "4.123.0"'), 2);
+  assert.equal(occurrences(deploy, "wranglerVersion:"), 0);
+  assert.ok(installIndex >= 0, "Deploy must install the lockfile dependencies");
+  assert.ok(firstActionIndex >= 0, "Deploy must invoke the Wrangler action");
+  assert.ok(
+    installIndex < firstActionIndex,
+    "Deploy must install the lockfile-selected Wrangler before both actions",
+  );
   assert.equal(
-    occurrences(
-      deploy,
-      "apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}",
-    ),
+    occurrences(deploy, "apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}"),
     2,
   );
   assert.equal(
-    occurrences(
-      deploy,
-      "accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}",
-    ),
+    occurrences(deploy, "accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"),
     2,
   );
 
@@ -119,11 +128,12 @@ test("both Cloudflare deploys remain on the official Wrangler action", () => {
     /workingDirectory: \.[\s\S]*command: deploy --strict --config workers\/taxaipca-motor\/wrangler\.json/u,
   );
 
-  assert.equal(packageJson.devDependencies.wrangler, "4.123.0");
-  assert.equal(
-    packageLock.packages["node_modules/wrangler"].version,
-    "4.123.0",
-  );
+  assert.match(wranglerVersion, /^4\.\d+\.\d+$/u);
+  assert.equal(lockRootVersion, wranglerVersion);
+  assert.equal(lockedWrangler.version, wranglerVersion);
+  assert.equal(installedWrangler.version, lockedWrangler.version);
+  assert.equal(lockedWrangler.dev, true);
+  assert.match(lockedWrangler.integrity, /^sha512-/u);
   assert.equal(occurrences(actionsLock, officialUse), 2);
 });
 

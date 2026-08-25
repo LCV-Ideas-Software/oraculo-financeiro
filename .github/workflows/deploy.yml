@@ -65,7 +65,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
           workingDirectory: .
-          wranglerVersion: "4.123.0"
           command: pages deploy dist --project-name=oraculo-financeiro --branch=main --commit-dirty=true
 
       - name: Deploy Cron Worker with Wrangler
@@ -75,5 +74,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
           workingDirectory: .
-          wranglerVersion: "4.123.0"
           command: deploy --strict --config workers/taxaipca-motor/wrangler.json
