@@ -22,6 +22,82 @@ function occurrences(text, fragment) {
   return text.split(fragment).length - 1;
 }
 
+function workflowJob(workflow, jobId) {
+  const lines = workflow.split(/\r?\n/u);
+  const jobsIndexes = lines.flatMap((line, index) =>
+    /^jobs:\s*(?:#.*)?$/u.test(line) ? [index] : [],
+  );
+
+  assert.equal(
+    jobsIndexes.length,
+    1,
+    "workflow must contain exactly one top-level jobs mapping",
+  );
+
+  const jobsIndex = jobsIndexes[0];
+  let jobIndent = null;
+  const jobStarts = [];
+
+  for (let index = jobsIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const indent = line.length - line.trimStart().length;
+    if (indent === 0) {
+      break;
+    }
+
+    jobIndent ??= indent;
+    if (indent === jobIndent && trimmed === `${jobId}:`) {
+      jobStarts.push(index);
+    }
+  }
+
+  assert.equal(
+    jobStarts.length,
+    1,
+    `workflow must contain exactly one ${jobId} job`,
+  );
+
+  const jobStart = jobStarts[0];
+  let jobEnd = lines.length;
+  for (let index = jobStart + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const indent = line.length - line.trimStart().length;
+    if (indent <= jobIndent) {
+      jobEnd = index;
+      break;
+    }
+  }
+
+  return lines.slice(jobStart, jobEnd).join("\n");
+}
+
+function assertStepOrderWithinJob(workflow, jobId, firstStep, secondStep) {
+  const job = workflowJob(workflow, jobId);
+  const firstStepIndex = job.indexOf(firstStep);
+  const secondStepIndex = job.indexOf(secondStep);
+
+  assert.ok(firstStepIndex >= 0, `${jobId} job must contain ${firstStep}`);
+  assert.ok(secondStepIndex >= 0, `${jobId} job must contain ${secondStep}`);
+  assert.ok(
+    firstStepIndex < secondStepIndex,
+    `${firstStep} must precede ${secondStep} in the ${jobId} job`,
+  );
+
+  return job;
+}
+
 const linearRelease = read(".github/workflows/linear-release.yml");
 const deploy = read(".github/workflows/deploy.yml");
 const actionsLock = read(".github/workflows/actions.lock");
@@ -91,20 +167,19 @@ test("Linear Release uses the pinned official action and lock entry", () => {
 test("both Cloudflare deploys remain on the official Wrangler action", () => {
   const officialUse = `cloudflare/wrangler-action@${WRANGLER_ACTION_SHA}`;
   const installCommand = "npm ci --ignore-scripts --no-audit --no-fund";
-  const installIndex = deploy.indexOf(installCommand);
-  const firstActionIndex = deploy.indexOf(officialUse);
+  const deployJob = assertStepOrderWithinJob(
+    deploy,
+    "deploy",
+    `run: ${installCommand}`,
+    `uses: ${officialUse}`,
+  );
   const wranglerVersion = packageJson.devDependencies.wrangler;
   const lockRootVersion = packageLock.packages[""].devDependencies.wrangler;
   const lockedWrangler = packageLock.packages["node_modules/wrangler"];
 
   assert.equal(occurrences(deploy, officialUse), 2);
+  assert.equal(occurrences(deployJob, officialUse), 2);
   assert.equal(occurrences(deploy, "wranglerVersion:"), 0);
-  assert.ok(installIndex >= 0, "Deploy must install the lockfile dependencies");
-  assert.ok(firstActionIndex >= 0, "Deploy must invoke the Wrangler action");
-  assert.ok(
-    installIndex < firstActionIndex,
-    "Deploy must install the lockfile-selected Wrangler before both actions",
-  );
   assert.equal(
     occurrences(deploy, "apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}"),
     2,
@@ -114,17 +189,17 @@ test("both Cloudflare deploys remain on the official Wrangler action", () => {
     2,
   );
 
-  const pages = deploy.indexOf(
+  const pages = deployJob.indexOf(
     "- name: Deploy Pages application with Wrangler",
   );
-  const worker = deploy.indexOf("- name: Deploy Cron Worker with Wrangler");
+  const worker = deployJob.indexOf("- name: Deploy Cron Worker with Wrangler");
   assert.ok(pages >= 0 && worker > pages);
   assert.match(
-    deploy.slice(pages, worker),
+    deployJob.slice(pages, worker),
     /workingDirectory: \.[\s\S]*command: pages deploy dist --project-name=oraculo-financeiro --branch=main --commit-dirty=true/u,
   );
   assert.match(
-    deploy.slice(worker),
+    deployJob.slice(worker),
     /workingDirectory: \.[\s\S]*command: deploy --strict --config workers\/taxaipca-motor\/wrangler\.json/u,
   );
 
@@ -135,6 +210,67 @@ test("both Cloudflare deploys remain on the official Wrangler action", () => {
   assert.equal(lockedWrangler.dev, true);
   assert.match(lockedWrangler.integrity, /^sha512-/u);
   assert.equal(occurrences(actionsLock, officialUse), 2);
+});
+
+test("the local Wrangler installation cannot come from a different job", () => {
+  const officialUse = `cloudflare/wrangler-action@${WRANGLER_ACTION_SHA}`;
+  const splitRunnerWorkflow = `jobs:
+  prepare:
+    steps:
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+  deploy:
+    steps:
+      - uses: ${officialUse}
+      - uses: ${officialUse}
+`;
+
+  assert.throws(
+    () =>
+      assertStepOrderWithinJob(
+        splitRunnerWorkflow,
+        "deploy",
+        "run: npm ci --ignore-scripts --no-audit --no-fund",
+        `uses: ${officialUse}`,
+      ),
+    /deploy job must contain run: npm ci/u,
+  );
+});
+
+test("the local Wrangler installation must precede both actions", () => {
+  const officialUse = `cloudflare/wrangler-action@${WRANGLER_ACTION_SHA}`;
+  const reversedStepsWorkflow = `jobs:
+  deploy:
+    steps:
+      - uses: ${officialUse}
+      - uses: ${officialUse}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+`;
+
+  assert.throws(
+    () =>
+      assertStepOrderWithinJob(
+        reversedStepsWorkflow,
+        "deploy",
+        "run: npm ci --ignore-scripts --no-audit --no-fund",
+        `uses: ${officialUse}`,
+      ),
+    /npm ci .* must precede .*wrangler-action.* in the deploy job/u,
+  );
+});
+
+test("the deploy job must exist exactly once", () => {
+  assert.throws(
+    () => workflowJob("jobs:\n  prepare:\n    steps: []\n", "deploy"),
+    /exactly one deploy job/u,
+  );
+  assert.throws(
+    () =>
+      workflowJob(
+        "jobs:\n  deploy:\n    steps: []\n  deploy:\n    steps: []\n",
+        "deploy",
+      ),
+    /exactly one deploy job/u,
+  );
 });
 
 test("no direct Slack workflow is invented for this repository", () => {
