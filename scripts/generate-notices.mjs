@@ -275,8 +275,16 @@ function componentes() {
       continue;
     }
     const id = `${nome}@${versao}`;
-    if (vistos.has(id)) continue;
-    vistos.add(id);
+    // Nome e versao nao identificam um artefato. Um fork em git, um `file:` ou
+    // outro registro pode preservar as duas coordenadas e ainda assim ser outro
+    // codigo, com outra licenca — e os dois seriam instalados em caminhos
+    // diferentes e servidos juntos. Deduplicar so pelas coordenadas descartava
+    // o segundo antes de olhar o diretorio dele. A identidade passa a incluir a
+    // origem e a integridade que o lockfile registra: copia hasteada e copia
+    // aninhada do MESMO artefato continuam colapsando, artefatos distintos nao.
+    const identidade = `${id}|${meta.resolved ?? ""}|${meta.integrity ?? ""}`;
+    if (vistos.has(identidade)) continue;
+    vistos.add(identidade);
     saida.push({
       nome,
       versao,
@@ -318,8 +326,18 @@ function componentes() {
 // seja lida como se fosse uma escolha entre alternativas.
 const IDENTIFICADOR_SPDX = /^[A-Za-z0-9][A-Za-z0-9.+-]*$/u;
 
+// Tratar todo dois-pontos como URL derrubava referencia externa valida do
+// SPDX: `DocumentRef-fornecedor:LicenseRef-Custom` tem dois-pontos e nao e URL
+// nenhuma. Tratada como URL, a expressao inteira escapava da validacao — o
+// oposto do que se quer. A deteccao usa o parser de referencia da plataforma e
+// exige esquema de rede: o campo `license` de pacotes antigos so traz URL
+// http(s). Qualquer outra coisa com dois-pontos segue adiante e e recusada pelo
+// formato de identificador SPDX, que nao admite o caractere.
 function pareceUrl(expressao) {
-  return expressao.includes(":");
+  const e = expressao.trim();
+  if (!URL.canParse(e)) return false;
+  const protocolo = new URL(e).protocol;
+  return protocolo === "http:" || protocolo === "https:";
 }
 
 function termosDeEscolha(expressao) {
@@ -425,13 +443,61 @@ function elegerLicencas(componentes) {
         .split(/\bOR\b|\bAND\b|\//u)
         .map((t) => t.replace(/[()]/gu, "").trim())
         .filter(Boolean);
-      const forasteiros = explicita.elected
+      const eleitos = explicita.elected
         .split(/\bAND\b/u)
         .map((t) => t.trim())
-        .filter((t) => t && !oferecidos.includes(t));
+        .filter(Boolean);
+      const forasteiros = eleitos.filter((t) => !oferecidos.includes(t));
       if (forasteiros.length) {
         pendentes.push(
           `${c.id}: a eleicao registrada cita ${forasteiros.join(", ")}, que a expressao "${expressao}" nao oferece`,
+        );
+        continue;
+      }
+      // A conferencia acima so anda num sentido: garante que a eleita e
+      // oferecida, nunca que a eleicao cobre tudo o que a expressao exige. Numa
+      // conjuncao como "MIT AND Apache-2.0" as duas licencas valem ao mesmo
+      // tempo, e registrar so "MIT" passaria despercebido. `mandatory` declara
+      // os termos nao-opcionais. Nao ha aqui parser de SPDX: a declaracao e
+      // humana, e e conferida por maquina nos pontos em que isso e decidivel.
+      if (!Array.isArray(explicita.mandatory)) {
+        pendentes.push(
+          `${c.id}: entrada em licenseElections sem \`mandatory\`; declare quais termos de "${expressao}" nao sao opcionais (lista vazia quando a expressao so oferece escolha)`,
+        );
+        continue;
+      }
+      const obrigatoriosForasteiros = explicita.mandatory.filter(
+        (t) => !oferecidos.includes(t),
+      );
+      if (obrigatoriosForasteiros.length) {
+        pendentes.push(
+          `${c.id}: \`mandatory\` cita ${obrigatoriosForasteiros.join(", ")}, que a expressao "${expressao}" nao contem`,
+        );
+        continue;
+      }
+      // Sem disjuncao em lugar nenhum, todo termo da expressao e obrigatorio, e
+      // isso se calcula sem interpretar gramatica. Havendo `OR`, o alcance de
+      // cada conjuncao depende de precedencia e parenteses: ai a declaracao e
+      // decisao humana e so se confere que ela e coerente.
+      const temDisjuncao = /\bOR\b/u.test(expressao) || expressao.includes("/");
+      const temExcecao = /\bWITH\b/u.test(expressao);
+      if (!temDisjuncao && !temExcecao) {
+        const faltando = oferecidos.filter(
+          (t) => !explicita.mandatory.includes(t),
+        );
+        if (faltando.length) {
+          pendentes.push(
+            `${c.id}: a expressao "${expressao}" nao oferece escolha, entao ${faltando.join(", ")} tambem e obrigatorio e falta em \`mandatory\``,
+          );
+          continue;
+        }
+      }
+      const obrigatoriosAusentes = explicita.mandatory.filter(
+        (t) => !eleitos.includes(t),
+      );
+      if (obrigatoriosAusentes.length) {
+        pendentes.push(
+          `${c.id}: a expressao "${expressao}" exige ${obrigatoriosAusentes.join(", ")}, que a eleicao registrada "${explicita.elected}" nao cobre`,
         );
         continue;
       }
@@ -556,7 +622,7 @@ const linhas = [
   "",
   ...(plataformaExcluidos.length
     ? [
-        `Excluidos por restricao de plataforma (${process.platform}/${process.arch}): ${plataformaExcluidos.length}`,
+        `Excluidos por restricao de plataforma (${POLICY.scope.npm.targetOs}/${POLICY.scope.npm.targetCpu}/${POLICY.scope.npm.targetLibc}): ${plataformaExcluidos.length}`,
         `  ${plataformaExcluidos.join(", ")}`,
         "  Nao sao instalados nesta plataforma e portanto nao entram no artefato.",
         "",
@@ -579,9 +645,21 @@ const linhas = [
   "",
 ];
 
+// Dois artefatos distintos podem trazer as mesmas coordenadas. Quando isso
+// acontece, o cabecalho de nome e versao deixa de distinguir um do outro, e o
+// leitor do arquivo nao teria como saber a qual deles cada texto pertence: a
+// origem passa a ser impressa junto, e so nesse caso.
+const quantosArtefatosPorId = new Map();
+for (const c of lista) {
+  quantosArtefatosPorId.set(c.id, (quantosArtefatosPorId.get(c.id) ?? 0) + 1);
+}
+
 for (const c of lista) {
   linhas.push(barra, "");
   linhas.push(`${c.nome} ${c.versao}`);
+  if (quantosArtefatosPorId.get(c.id) > 1) {
+    linhas.push(`Origem do artefato: ${c.origemPacote ?? "nao declarada no lockfile"}`);
+  }
   if (c.licencaDeclarada) linhas.push(`Licenca declarada: ${c.licencaDeclarada}`);
   if (c.eleicao) {
     linhas.push(

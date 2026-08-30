@@ -104,3 +104,37 @@ describe('verify-thirdparty', () => {
     expect(result.stderr).toMatch(/licen/u);
   });
 });
+
+// Thread do PR #275: a conferência da eleição só andava num sentido — garantia
+// que a licença eleita é oferecida pela expressão, nunca que a eleição cobre
+// tudo o que a expressão exige. Numa conjuntiva `MIT AND Apache-2.0`, eleger só
+// MIT passava. `mandatory` declara os termos não-opcionais, e a política é
+// conferida aqui para que uma entrada futura não nasça sem eles.
+describe('política de eleição de licença', () => {
+  it('declara ordem de preferência e nenhuma licença cujo texto é subconjunto de outra', async () => {
+    const { POLICY } = await import('./legal/thirdparty-policy.mjs');
+    expect(POLICY.licenseElectionPreference.length).toBeGreaterThan(0);
+    // BSD-2-Clause é o BSD-3-Clause sem a cláusula de não-endosso, e MIT-0 e
+    // 0BSD são MIT e ISC sem a condição de atribuição: todo trecho que
+    // identifica o menor aparece também no maior, então corroborar por busca de
+    // trecho não os distingue. Só entram por eleição explícita.
+    for (const subconjunto of ['MIT-0', '0BSD', 'BSD-2-Clause']) {
+      expect(POLICY.licenseElectionPreference).not.toContain(subconjunto);
+    }
+  });
+
+  it('exige expressão, eleita, motivo e termos obrigatórios em toda eleição explícita', async () => {
+    const { POLICY } = await import('./legal/thirdparty-policy.mjs');
+    for (const [id, eleicao] of Object.entries(POLICY.licenseElections)) {
+      expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
+      expect(eleicao.expression).toBeTruthy();
+      expect(eleicao.elected).toBeTruthy();
+      expect(eleicao.rationale).toBeTruthy();
+      expect(Array.isArray(eleicao.mandatory)).toBe(true);
+      for (const termo of eleicao.mandatory) {
+        expect(eleicao.expression).toContain(termo);
+        expect(eleicao.elected).toContain(termo);
+      }
+    }
+  });
+});

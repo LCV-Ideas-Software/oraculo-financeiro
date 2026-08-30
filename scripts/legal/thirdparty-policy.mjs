@@ -104,11 +104,13 @@ export const POLICY = Object.freeze({
   // marcador proprio. MIT-0 e 0BSD ficaram DE FORA de proposito: diferem de MIT
   // e de ISC por uma clausula que o outro tem e eles nao, e ausencia nao se
   // detecta com busca de trecho. Expressao que so ofereca esses exige eleicao
-  // explicita.
+  // explicita. BSD-2-Clause ficou de fora pelo mesmo motivo: o BSD-3-Clause e o
+  // texto do BSD-2 mais a clausula de nao-endosso, entao todo marcador do BSD-2
+  // aparece tambem no BSD-3, e um pacote que oferecesse os dois e empacotasse
+  // so o BSD-3 corroboraria BSD-2 falsamente.
   licenseElectionPreference: Object.freeze([
     "MIT",
     "ISC",
-    "BSD-2-Clause",
     "BSD-3-Clause",
     "Apache-2.0",
     "Unlicense",
