@@ -11,16 +11,20 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import spdxParse from "spdx-expression-parse";
 
-import { selecionarRegistroDoArtefato } from "./legal/artifact-policy.mjs";
+import {
+  identidadeDoArtefatoEhImutavel,
+  selecionarRegistroDoArtefato,
+} from "./legal/artifact-policy.mjs";
 import { corroborarTextosDeLicenca } from "./legal/license-text.mjs";
 import {
   alcanceNoGrafoNpm,
+  consultarArvoreNpm,
   criarComponenteNpm,
   descreverRaizNpm,
   derivarAlcanceNpm,
   ehEntradaInstaladaNpm,
   ehLinkDiretoDaRaizNpm,
-  filtrarRaizesCompativeisNpm,
+  ehOpcionalEmProducaoNpm,
   mapaDeLinksNpm,
   mesclarOcorrenciaNpm,
   nomesDasRaizesDeProducaoNpm,
@@ -66,6 +70,7 @@ const criarArvoreNpm = () => {
     dependencies: {
       "alias-root": "npm:real-alias@1.0.0",
       "linked-root": "file:packages/linked-root",
+      "platform-root": "1.0.0",
     },
   });
   const packages = {
@@ -75,12 +80,20 @@ const criarArvoreNpm = () => {
       dependencies: {
         "alias-root": "npm:real-alias@1.0.0",
         "linked-root": "file:packages/linked-root",
+        "platform-root": "1.0.0",
       },
     },
     "node_modules/alias-root": {
       name: "real-alias",
       version: "1.0.0",
       resolved: "https://registry.npmjs.org/real-alias/-/real-alias-1.0.0.tgz",
+      dependencies: { "alias-child": "1.0.0" },
+    },
+    "node_modules/alias-root/node_modules/alias-child": {
+      name: "alias-child",
+      version: "1.0.0",
+      resolved:
+        "https://registry.npmjs.org/alias-child/-/alias-child-1.0.0.tgz",
     },
     "node_modules/linked-root": {
       resolved: "packages/linked-root",
@@ -89,6 +102,7 @@ const criarArvoreNpm = () => {
     "packages/linked-root": {
       name: "real-linked-package",
       version: "1.0.0",
+      dependencies: { "linked-child": "file:../linked-child" },
     },
     "packages/linked-root/node_modules/linked-child": {
       resolved: "packages/linked-child",
@@ -97,6 +111,32 @@ const criarArvoreNpm = () => {
     "packages/linked-child": {
       name: "linked-child",
       version: "1.0.0",
+    },
+    "node_modules/platform-root": {
+      name: "platform-root",
+      version: "1.0.0",
+      resolved:
+        "https://registry.npmjs.org/platform-root/-/platform-root-1.0.0.tgz",
+      optionalDependencies: {
+        "linux-child": "1.0.0",
+        "windows-child": "1.0.0",
+      },
+    },
+    "node_modules/linux-child": {
+      name: "linux-child",
+      version: "1.0.0",
+      resolved:
+        "https://registry.npmjs.org/linux-child/-/linux-child-1.0.0.tgz",
+      optional: true,
+      os: ["linux"],
+    },
+    "node_modules/windows-child": {
+      name: "windows-child",
+      version: "1.0.0",
+      resolved:
+        "https://registry.npmjs.org/windows-child/-/windows-child-1.0.0.tgz",
+      optional: true,
+      os: ["win32"],
     },
   };
   escreverJson(join(raiz, "package-lock.json"), {
@@ -155,6 +195,25 @@ afterEach(() => {
 });
 
 describe("alcance oficial do npm para avisos", () => {
+  it("consulta o grafo virtual do lock e filtra pela plataforma do artefato, não pelo host", () => {
+    const { raiz, packages } = criarArvoreNpm();
+    const arvore = consultarArvoreNpm({ raiz, caminhoDoNpm: caminhoDoNpm() });
+    const localizacoes = new Set(arvore.map((no) => no.location));
+    expect(localizacoes).toContain("node_modules/linux-child");
+    expect(localizacoes).toContain("node_modules/windows-child");
+
+    const alcanceLinux = derivarAlcanceNpm({
+      arvore,
+      raizes: [descreverRaizNpm(packages, "platform-root")],
+      comDescendentes: true,
+      packages,
+      alvo: { targetOs: "linux", targetCpu: "x64", targetLibc: "glibc" },
+    });
+    expect(alcanceLinux).toContain("node_modules/platform-root");
+    expect(alcanceLinux).toContain("node_modules/linux-child");
+    expect(alcanceLinux).not.toContain("node_modules/windows-child");
+  });
+
   it("preserva uma raiz alias e seus descendentes por localização instalada", () => {
     const { raiz, packages } = criarArvoreNpm();
     const alcance = alcanceNoGrafoNpm({
@@ -362,11 +421,11 @@ describe("alcance oficial do npm para avisos", () => {
     ).toEqual(["navegador", "opcional-compativel"]);
   });
 
-  it("retira raiz file: opcional incompatível antes de consultar o grafo instalado", () => {
+  it("poda raiz file: devOptional incompatível com todos os descendentes", () => {
     const packages = {
       "node_modules/opcional": {
         link: true,
-        optional: true,
+        devOptional: true,
         resolved: "packages/opcional",
       },
       "packages/opcional": {
@@ -374,20 +433,127 @@ describe("alcance oficial do npm para avisos", () => {
         version: "1.0.0",
         os: ["darwin"],
       },
-      "node_modules/compativel": {
-        name: "compativel",
+      "packages/opcional/node_modules/filho": {
+        name: "filho",
         version: "1.0.0",
-        optional: true,
-        os: ["any"],
+        devOptional: true,
       },
     };
-    expect(
-      filtrarRaizesCompativeisNpm({
-        packages,
-        nomes: ["opcional", "compativel"],
+    const excluidosPorPlataforma = new Set<string>();
+    const alcance = derivarAlcanceNpm({
+      arvore: [
+        {
+          location: "packages/opcional",
+          to: ["packages/opcional/node_modules/filho"],
+        },
+        { location: "packages/opcional/node_modules/filho", to: [] },
+      ],
+      raizes: [descreverRaizNpm(packages, "opcional")],
+      comDescendentes: true,
+      links: mapaDeLinksNpm(packages),
+      packages,
+      alvo: { targetOs: "linux", targetCpu: "x64", targetLibc: "glibc" },
+      excluidosPorPlataforma,
+    });
+    expect(alcance.size).toBe(0);
+    expect(ehOpcionalEmProducaoNpm({ devOptional: true })).toBe(true);
+    expect(ehOpcionalEmProducaoNpm({})).toBe(false);
+    expect(excluidosPorPlataforma).toEqual(
+      new Set([
+        "node_modules/opcional",
+        "packages/opcional",
+        "packages/opcional/node_modules/filho",
+      ]),
+    );
+  });
+
+  it("poda os descendentes de um ramo opcional incompatível, mas preserva outro caminho", () => {
+    const alvo = { targetOs: "linux", targetCpu: "x64", targetLibc: "glibc" };
+    const packages = {
+      "node_modules/app": { name: "app", version: "1.0.0" },
+      "node_modules/optional-parent": {
+        name: "optional-parent",
+        version: "1.0.0",
+        optional: true,
+        os: ["win32"],
+      },
+      "node_modules/neutral-child": {
+        name: "neutral-child",
+        version: "1.0.0",
+        optional: true,
+      },
+    };
+    const arvore = [
+      {
+        location: "node_modules/app",
+        to: ["node_modules/optional-parent"],
+      },
+      {
+        location: "node_modules/optional-parent",
+        to: ["node_modules/neutral-child"],
+      },
+      { location: "node_modules/neutral-child", to: [] },
+    ];
+    const excluidosPorPlataforma = new Set<string>();
+    const parametros = {
+      arvore,
+      raizes: [{ nome: "app", localizacao: "node_modules/app" }],
+      comDescendentes: true,
+      packages,
+      alvo,
+      excluidosPorPlataforma,
+    };
+
+    const somentePeloRamoIncompativel = derivarAlcanceNpm(parametros);
+    expect(somentePeloRamoIncompativel).toContain("node_modules/app");
+    expect(somentePeloRamoIncompativel).not.toContain(
+      "node_modules/optional-parent",
+    );
+    expect(somentePeloRamoIncompativel).not.toContain(
+      "node_modules/neutral-child",
+    );
+    expect(excluidosPorPlataforma).toContain("node_modules/optional-parent");
+    expect(excluidosPorPlataforma).toContain("node_modules/neutral-child");
+
+    const excluidosComCaminhoCompartilhado = new Set<string>();
+    const compartilhado = derivarAlcanceNpm({
+      ...parametros,
+      arvore: [
+        { ...arvore[0], to: [...arvore[0].to, "node_modules/neutral-child"] },
+        ...arvore.slice(1),
+      ],
+      excluidosPorPlataforma: excluidosComCaminhoCompartilhado,
+    });
+    expect(compartilhado).not.toContain("node_modules/optional-parent");
+    expect(compartilhado).toContain("node_modules/neutral-child");
+    expect(excluidosComCaminhoCompartilhado).toContain(
+      "node_modules/neutral-child",
+    );
+  });
+
+  it("falha fechado para dependência obrigatória incompatível no grafo", () => {
+    expect(() =>
+      derivarAlcanceNpm({
+        arvore: [
+          {
+            location: "node_modules/app",
+            to: ["node_modules/required-child"],
+          },
+          { location: "node_modules/required-child", to: [] },
+        ],
+        raizes: [{ nome: "app", localizacao: "node_modules/app" }],
+        comDescendentes: true,
+        packages: {
+          "node_modules/app": { name: "app", version: "1.0.0" },
+          "node_modules/required-child": {
+            name: "required-child",
+            version: "1.0.0",
+            os: ["win32"],
+          },
+        },
         alvo: { targetOs: "linux", targetCpu: "x64", targetLibc: "glibc" },
       }),
-    ).toEqual(["compativel"]);
+    ).toThrow(/obrigatoria e incompativel/u);
   });
 
   it("não promove integridade de outra ocorrência para a primeira localização", () => {
@@ -498,7 +664,7 @@ describe("inspeção manual de declaração de licença", () => {
       integrity: null,
     };
     expect(validarInspecaoManual(remoto, politica).join("\n")).toMatch(
-      /nao e canonica nem imutavel/u,
+      /nao e uma revisao Git imutavel/u,
     );
   });
 
@@ -535,7 +701,7 @@ describe("inspeção manual de declaração de licença", () => {
     const outraOrigem = {
       ...inspecionada,
       source: "https://registry.npmjs.org/outro/-/outro-1.0.0.tgz",
-      integrity: null,
+      integrity: componente.integridadePacote,
     };
     const selecao = selecionarRegistroDoArtefato(
       [outraOrigem, inspecionada],
@@ -563,6 +729,53 @@ describe("inspeção manual de declaração de licença", () => {
     expect(
       selecionarRegistroDoArtefato(inspecionada, semIntegridade),
     ).toMatchObject({ ok: false, tipo: "politica-incompleta" });
+  });
+
+  it.each([
+    ["packages/foo", null, false],
+    ["file:../foo", null, false],
+    ["git+https://github.com/exemplo/foo.git#main", null, false],
+    [
+      "https://registry.npmjs.org/foo/-/foo-1.0.0.tgz",
+      null,
+      false,
+    ],
+    [
+      "git+https://github.com/exemplo/foo.git#0123456789abcdef0123456789abcdef01234567",
+      null,
+      true,
+    ],
+    ["packages/foo", "sha512-YWJjZA==", false],
+    ["packages/foo", componente.integridadePacote, true],
+  ])(
+    "aceita somente digest ou revisão Git imutável (%s)",
+    (source, integrity, esperado) => {
+      expect(identidadeDoArtefatoEhImutavel({ source, integrity })).toBe(
+        esperado,
+      );
+    },
+  );
+
+  it("rejeita uma política para diretório local que pode mudar mantendo a origem", () => {
+    const mutavel = {
+      ...componente,
+      id: "foo@1.0.0",
+      origemPacote: "packages/foo",
+      integridadePacote: null,
+    };
+    const selecao = selecionarRegistroDoArtefato(
+      {
+        ...inspecionada,
+        source: "packages/foo",
+        integrity: null,
+      },
+      mutavel,
+    );
+    expect(selecao).toMatchObject({
+      ok: false,
+      tipo: "origem-mutavel-sem-integridade",
+      encontrada: "packages/foo",
+    });
   });
 });
 

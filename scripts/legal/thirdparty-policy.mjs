@@ -269,9 +269,10 @@ export const POLICY = Object.freeze({
   // Eleicoes explicitas, por `<nome>@<versao>`. Necessarias para toda
   // expressao que nao seja uma das duas formas triviais.
   //
-  // Cada registro inclui `ecosystem`, `source` e `integrity` exata, ou `null`
-  // quando o lockfile nao a fornece. O valor pode ser objeto unico ou lista;
-  // first-wins e proibido. `expression` e conferida contra o pacote atual.
+  // Cada registro inclui `ecosystem`, `source` e `integrity` exata. `null` so
+  // e permitido quando `source` e uma origem Git presa a um commit completo de
+  // 40 hexadecimais. O valor pode ser objeto unico ou lista; first-wins e
+  // proibido. `expression` e conferida contra o pacote atual.
   licenseElections: Object.freeze({}),
 
   // Excecoes de metadado nao-SPDX ou ausente, por `<nome>@<versao>`. Cada uma
@@ -279,9 +280,9 @@ export const POLICY = Object.freeze({
   // `declared: null`; para texto nao analisavel, copie o valor literal. A
   // entrada tambem precisa registrar `identifiedLicense` (um termo SPDX
   // concreto), `rationale`, `ecosystem`, `source` exatamente como o `resolved`
-  // do lockfile e `integrity` exata (ou `null`). O valor pode ser uma lista para
-  // representar origens homonimas sem first-wins. A excecao nao substitui uma
-  // declaracao SPDX valida.
+  // do lockfile e `integrity` exata (`null` apenas para Git em commit completo).
+  // O valor pode ser uma lista para representar origens homonimas sem
+  // first-wins. A excecao nao substitui uma declaracao SPDX valida.
   unverifiableLicenseDeclarations: Object.freeze({}),
 
   // Texto vendorizado. O sha256 e do arquivo inteiro, cabecalho de proveniencia

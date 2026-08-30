@@ -16,8 +16,8 @@ Dependencias de desenvolvimento nao constam, por nao serem servidas ao
 usuario, com uma excecao declarada: ferramenta de build que injeta codigo
 proprio no artefato entra apesar da marcacao, porque esse codigo e servido.
   vite: Injeta o polyfill de modulepreload no ponto de entrada do navegador. `build.modulePreload.polyfill` esta no padrao documentado, que e ativo.
-Gerado por scripts/generate-notices.mjs a partir de package-lock.json,
-excluindo as entradas que o npm marca como dev.
+Gerado por scripts/generate-notices.mjs a partir de package-lock.json e
+do alcance oficial do npm, excluindo dev e ramos opcionais incompatíveis.
 Codigo-fonte do produto: https://github.com/LCV-Ideas-Software/oraculo-financeiro
 
 ==============================================================================

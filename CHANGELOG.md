@@ -24,6 +24,11 @@
   presas a revisao explicita por origem, integridade, conjunto de arquivos e
   SHA-256. Inspecoes manuais nao podem substituir declaracoes SPDX validas, e a
   identidade de integridade passa pelo parser SRI estrito oficial do npm.
+  Ramos opcionais incompativeis agora sao podados com todos os descendentes no
+  grafo virtual oficial do lockfile, independente da plataforma do host, sem
+  remover um filho que tambem possua caminho compativel.
+  Politicas sem SRI so podem selecionar uma origem Git presa a commit completo,
+  e o intervalo Node do repositorio acompanha o requisito efetivo do `ssri`.
   O Licensee também entra na manutenção nativa do Dependabot para Bundler; no
   deploy, suas dependencias sao instaladas em modo congelado e sem restaurar
   cache de CI antes da publicacao.

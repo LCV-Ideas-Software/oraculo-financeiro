@@ -1,30 +1,12 @@
 import spdxParse from "spdx-expression-parse";
-import ssri from "ssri";
 
-const TARBALL_CANONICO_NPM =
-  /^https:\/\/registry\.npmjs\.org\/.+\/-\/.+\.tgz$/u;
-// O npm distingue URLs de tarball de fontes Git. Somente os protocolos Git
-// documentados por ele transformam `#<commit-ish>` em uma revisao; num URL
-// HTTP comum, o fragmento nao participa da recuperacao dos bytes.
-const REVISAO_GIT_IMUTAVEL =
-  /^git(?:\+(?:ssh|https?|file))?:\/\/.+#[0-9a-f]{40}$/iu;
+import {
+  integridadeSriEstrita,
+  origemGitImutavel,
+} from "./artifact-policy.mjs";
 
 const textoUtil = (valor) =>
   typeof valor === "string" && valor.trim().length > 0;
-
-const integridadeSriEstrita = (valor) => {
-  if (!textoUtil(valor)) return false;
-  const canonicaDeEntrada = valor.trim().split(/\s+/u).join(" ");
-  try {
-    const analisada = ssri.parse(valor, { strict: true });
-    return (
-      analisada !== null &&
-      analisada.toString({ strict: true }) === canonicaDeEntrada
-    );
-  } catch {
-    return false;
-  }
-};
 
 // A inspecao manual e uma excecao ao reconhecimento automatico, nao a
 // identidade do artefato. Ela precisa declarar o que foi identificado e ficar
@@ -110,11 +92,10 @@ export function validarInspecaoManual(componente, inspecionada) {
     }
   } else if (
     textoUtil(componente.origemPacote) &&
-    !TARBALL_CANONICO_NPM.test(componente.origemPacote) &&
-    !REVISAO_GIT_IMUTAVEL.test(componente.origemPacote)
+    !origemGitImutavel(componente.origemPacote)
   ) {
     problemas.push(
-      `${componente.id}: a origem "${componente.origemPacote}" nao e canonica nem imutavel e o lockfile nao traz integridade`,
+      `${componente.id}: a origem "${componente.origemPacote}" nao e uma revisao Git imutavel e o lockfile nao traz integridade`,
     );
   }
   return problemas;

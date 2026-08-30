@@ -45,7 +45,7 @@ import {
   derivarAlcanceNpm,
   ehEntradaInstaladaNpm,
   ehLinkDiretoDaRaizNpm,
-  filtrarRaizesCompativeisNpm,
+  ehOpcionalEmProducaoNpm,
   mapaDeLinksNpm,
   mesclarOcorrenciaNpm,
   nomesDasRaizesDeProducaoNpm,
@@ -311,7 +311,7 @@ function componentes() {
     // Aplicar o filtro antes desta resolucao aprovaria um link para pacote
     // incompativel. `npm-install-checks` preserva inclusive o wildcard `any`.
     if (plataformaExcluidaNpm(meta, POLICY.scope.npm)) {
-      if (meta.optional !== true) {
+      if (!ehOpcionalEmProducaoNpm(meta)) {
         naoResolvidos.push(
           `${chave}: dependencia obrigatoria e incompativel com a plataforma-alvo ` +
             `${POLICY.scope.npm.targetOs}/${POLICY.scope.npm.targetCpu}/${POLICY.scope.npm.targetLibc}`,
@@ -622,16 +622,17 @@ function elegerLicencas(componentes) {
 
 // ------------------------------------------------------------------ montagem
 
-const lista = componentes();
+const candidatos = componentes();
 
 // ------------------------------------------------------------------- escopo
 
 // Nem tudo que e dependencia de producao e servido ao navegador: as Pages
 // Functions rodam no servidor da Cloudflare, e o que so elas importam nunca
 // entra no bundle. Afirmar "servido ao navegador" para todos os 22 seria
-// falso. O escopo de cada componente vem do alcance real no grafo instalado,
-// calculado pelo `npm query` — o Arborist e o mesmo que o npm usa — a partir
-// de raizes declaradas: as de producao do manifesto, separadas em navegador e
+// falso. O escopo de cada componente vem do alcance no grafo virtual do lock,
+// calculado pelo `npm query --package-lock-only` — o Arborist e o mesmo que o
+// npm usa e o grafo virtual independe da plataforma do host — a partir de
+// raizes declaradas: as de producao do manifesto, separadas em navegador e
 // servidor pela politica, e as ferramentas de build que injetam runtime.
 function caminhoDoCliDoNpm() {
   const candidatos = [
@@ -649,6 +650,7 @@ const arvoreNpm = consultarArvoreNpm({
   caminhoDoNpm: caminhoDoCliDoNpm(),
 });
 const linksNpm = mapaDeLinksNpm(lockNpm.packages);
+const excluidosDoAlcancePorPlataforma = new Set();
 
 function descreverRaizDoGrafo(nome) {
   return descreverRaizNpm(lockNpm.packages, nome);
@@ -660,17 +662,16 @@ function alcanceNoGrafo(raizes, comDescendentes) {
     raizes: raizes.map(descreverRaizDoGrafo),
     comDescendentes,
     links: linksNpm,
+    packages: lockNpm.packages,
+    alvo: POLICY.scope.npm,
+    excluidosPorPlataforma: excluidosDoAlcancePorPlataforma,
   });
 }
 
 const raizesServidor = Object.keys(POLICY.scope.npm.serverOnlyRoots || {});
-const raizesProducao = filtrarRaizesCompativeisNpm({
-  packages: lockNpm.packages,
-  nomes: nomesDasRaizesDeProducaoNpm(
-    JSON.parse(readFileSync(resolve(RAIZ, "package.json"), "utf8")),
-  ),
-  alvo: POLICY.scope.npm,
-});
+const raizesProducao = nomesDasRaizesDeProducaoNpm(
+  JSON.parse(readFileSync(resolve(RAIZ, "package.json"), "utf8")),
+);
 const raizesNavegador = raizesProducao.filter((r) => !raizesServidor.includes(r));
 const noNavegador = new Set([
   ...alcanceNoGrafo(raizesNavegador, true),
@@ -679,14 +680,28 @@ const noNavegador = new Set([
 ]);
 const noServidor = alcanceNoGrafo(raizesServidor, true);
 
+// O lockfile tambem descreve ramos opcionais que nao existem na plataforma do
+// artefato. So a uniao alcancada pelo grafo oficial do npm e distribuida; um
+// filho neutro de ancestral opcional incompatível nao pode reaparecer apenas
+// porque a entrada dele, vista isoladamente, nao repete `os`/`cpu`/`libc`.
+const lista = [];
 const semEscopo = [];
-for (const c of lista) {
+for (const c of candidatos) {
   const nav = c.localizacoes.some((p) => noNavegador.has(p));
   const srv = c.localizacoes.some((p) => noServidor.has(p));
   if (nav && srv) c.escopo = "navegador e Pages Functions (servidor)";
   else if (nav) c.escopo = "navegador";
   else if (srv) c.escopo = "Pages Functions (servidor)";
-  else semEscopo.push(`${c.id}: nao e alcancavel de nenhuma raiz declarada`);
+  else if (
+    c.localizacoes.length > 0 &&
+    c.localizacoes.every((p) => excluidosDoAlcancePorPlataforma.has(p))
+  ) {
+    continue;
+  } else {
+    semEscopo.push(`${c.id}: nao e alcancavel de nenhuma raiz declarada`);
+    continue;
+  }
+  lista.push(c);
 }
 if (semEscopo.length) {
   falhar(
@@ -878,8 +893,8 @@ const linhas = [
             `  ${c.nome}: ${POLICY.scope.npm.runtimeInjectingBuildTools[c.nome].reason}`,
         )
     : []),
-  "Gerado por scripts/generate-notices.mjs a partir de package-lock.json,",
-  "excluindo as entradas que o npm marca como dev.",
+  "Gerado por scripts/generate-notices.mjs a partir de package-lock.json e",
+  "do alcance oficial do npm, excluindo dev e ramos opcionais incompatíveis.",
   `Codigo-fonte do produto: ${POLICY.project.sourceRepository}`,
   "",
 ];

@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { identidadeDoArtefatoEhImutavel } from './legal/artifact-policy.mjs';
+
 // Threads do PR #235: (a) uma linha duplicada na tabela sobrescrevia a
 // anterior em silêncio — a segunda ocorrência "corrigia" a primeira e o gate
 // passava; (b) dependência sem entrada (ou sem campo license) no lockfile
@@ -142,10 +144,7 @@ describe('política de eleição de licença', () => {
         expect(eleicao.ecosystem).toBe('npm');
         expect(eleicao.source).toBeTruthy();
         expect(Object.hasOwn(eleicao, 'integrity')).toBe(true);
-        expect(
-          eleicao.integrity === null ||
-            (typeof eleicao.integrity === 'string' && eleicao.integrity.length > 0),
-        ).toBe(true);
+        expect(identidadeDoArtefatoEhImutavel(eleicao)).toBe(true);
         expect(eleicao.expression).toBeTruthy();
         expect(eleicao.elected).toBeTruthy();
         expect(eleicao.rationale).toBeTruthy();
@@ -165,6 +164,7 @@ describe('política de eleição de licença', () => {
         expect(registro.ecosystem).toBe('npm');
         expect(registro.source).toBeTruthy();
         expect(Object.hasOwn(registro, 'integrity')).toBe(true);
+        expect(identidadeDoArtefatoEhImutavel(registro)).toBe(true);
         expect(registro.licenses.length).toBeGreaterThan(0);
         expect(registro.rationale).toBeTruthy();
         expect(Object.keys(registro.files).length).toBeGreaterThan(0);
@@ -189,10 +189,7 @@ describe('política de eleição de licença', () => {
         expect(registro.ecosystem).toBe('npm');
         expect(registro.source).toBeTruthy();
         expect(Object.hasOwn(registro, 'integrity')).toBe(true);
-        expect(
-          registro.integrity === null ||
-            (typeof registro.integrity === 'string' && registro.integrity.length > 0),
-        ).toBe(true);
+        expect(identidadeDoArtefatoEhImutavel(registro)).toBe(true);
         expect(registro.rationale).toBeTruthy();
         expect(registro.sourceRepository).toBeTruthy();
         // Nome de branch ou tag não é proveniência: os dois se movem. Só commit

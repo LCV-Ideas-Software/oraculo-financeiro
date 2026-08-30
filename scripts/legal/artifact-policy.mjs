@@ -1,3 +1,5 @@
+import ssri from "ssri";
+
 const registrosDaEntrada = (entrada) =>
   Array.isArray(entrada)
     ? entrada
@@ -7,6 +9,33 @@ const registrosDaEntrada = (entrada) =>
 
 const textoUtil = (valor) =>
   typeof valor === "string" && valor.trim().length > 0;
+
+// Sem um digest fornecido pelo lockfile, somente uma origem Git presa a um
+// commit completo identifica bytes imutaveis. Caminhos `file:`, diretorios
+// locais, branches, tags e tarballs HTTP podem mudar sem alterar `source`.
+const REVISAO_GIT_IMUTAVEL =
+  /^git(?:\+(?:ssh|https?|file))?:\/\/.+#[0-9a-f]{40}$/iu;
+
+export const origemGitImutavel = (origem) =>
+  textoUtil(origem) && REVISAO_GIT_IMUTAVEL.test(origem);
+
+export const integridadeSriEstrita = (valor) => {
+  if (!textoUtil(valor)) return false;
+  const canonicaDeEntrada = valor.trim().split(/\s+/u).join(" ");
+  try {
+    const analisada = ssri.parse(valor, { strict: true });
+    return (
+      analisada !== null &&
+      analisada.toString({ strict: true }) === canonicaDeEntrada
+    );
+  } catch {
+    return false;
+  }
+};
+
+export const identidadeDoArtefatoEhImutavel = ({ source, integrity } = {}) =>
+  integridadeSriEstrita(integrity) ||
+  (integrity === null && origemGitImutavel(source));
 
 const registroIncompleto = (registro) =>
   !textoUtil(registro?.ecosystem) ||
@@ -37,6 +66,22 @@ export function selecionarRegistroDoArtefato(entrada, componente) {
     registros.some(registroIncompleto)
   ) {
     return { ok: false, tipo: "politica-incompleta" };
+  }
+
+  const registroMutavel = registros.find(
+    (registro) => !identidadeDoArtefatoEhImutavel(registro),
+  );
+  const componenteComoRegistro = {
+    source: componente.origemPacote,
+    integrity: componente.integridadePacote,
+  };
+  if (registroMutavel || !identidadeDoArtefatoEhImutavel(componenteComoRegistro)) {
+    return {
+      ok: false,
+      tipo: "origem-mutavel-sem-integridade",
+      encontrada:
+        registroMutavel?.source ?? componente.origemPacote ?? "ausente",
+    };
   }
 
   const correspondentes = registros.filter((r) => corresponde(r, componente));
@@ -89,6 +134,8 @@ export function descreverFalhaDeSelecao(selecao, componente) {
       return `${prefixo}: a politica precisa registrar ecosystem, source e a integridade exata quando presente no lockfile`;
     case "politica-duplicada":
       return `${prefixo}: ${selecao.quantidade} registros da politica correspondem ao mesmo artefato exato`;
+    case "origem-mutavel-sem-integridade":
+      return `${prefixo}: a origem "${selecao.encontrada}" pode mudar e nao possui integridade; use a SRI exata do lockfile ou uma origem Git presa a um commit completo`;
     case "ecossistema-divergente":
       return `${prefixo}: nenhum registro pertence a este ecossistema; registrados: ${selecao.esperados.join(", ")}`;
     case "integridade-divergente":

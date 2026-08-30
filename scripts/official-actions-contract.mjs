@@ -109,6 +109,7 @@ const packageLock = JSON.parse(read("package-lock.json"));
 const installedWrangler = JSON.parse(
   read("node_modules/wrangler/package.json"),
 );
+const installedSsri = JSON.parse(read("node_modules/ssri/package.json"));
 const allWorkflows = readdirSync(workflowsDirectory)
   .filter((file) => /\.ya?ml$/u.test(file))
   .map((file) => read(path.join(".github", "workflows", file)))
@@ -240,6 +241,13 @@ test("actions.lock keys stay pinned to the workflow SHAs", () => {
     );
     assert.doesNotMatch(actionsLock, new RegExp(`'${action}@${ref}':`, "u"));
   }
+});
+
+test("the repository Node range matches the installed ssri runtime contract", () => {
+  const declaredRange = packageJson.engines.node;
+  assert.equal(packageLock.packages[""].engines.node, declaredRange);
+  assert.equal(packageLock.packages["node_modules/ssri"].engines.node, declaredRange);
+  assert.equal(installedSsri.engines.node, declaredRange);
 });
 
 test("the deploy installs Licensee dependencies without restoring a cache", () => {
