@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import spdxParse from 'spdx-expression-parse';
 import { afterEach, describe, expect, it } from 'vitest';
 
 // Threads do PR #235: (a) uma linha duplicada na tabela sobrescrevia a
@@ -108,8 +109,9 @@ describe('verify-thirdparty', () => {
 // Thread do PR #275: a conferência da eleição só andava num sentido — garantia
 // que a licença eleita é oferecida pela expressão, nunca que a eleição cobre
 // tudo o que a expressão exige. Numa conjuntiva `MIT AND Apache-2.0`, eleger só
-// MIT passava. `mandatory` declara os termos não-opcionais, e a política é
-// conferida aqui para que uma entrada futura não nasça sem eles.
+// MIT passava. As obrigações passaram a ser DERIVADAS da árvore sintática pela
+// implementação de referência do SPDX, e a asserção abaixo usa o mesmo
+// predicado do gerador.
 describe('política de eleição de licença', () => {
   it('declara ordem de preferência e nenhuma licença cujo texto é subconjunto de outra', async () => {
     const { POLICY } = await import('./legal/thirdparty-policy.mjs');
@@ -123,17 +125,61 @@ describe('política de eleição de licença', () => {
     }
   });
 
-  it('exige expressão, eleita, motivo e termos obrigatórios em toda eleição explícita', async () => {
+  it('exige que toda eleição explícita satisfaça a expressão que resolve', async () => {
     const { POLICY } = await import('./legal/thirdparty-policy.mjs');
+    const barraLegada = (e: string) =>
+      e.includes('/')
+        ? e
+            .split('/')
+            .map((t) => t.trim())
+            .join(' OR ')
+        : e;
+    type No = {
+      license?: string;
+      exception?: string;
+      conjunction?: string;
+      left?: No;
+      right?: No;
+    };
+    const folha = (n: No) => (n.exception ? `${n.license} WITH ${n.exception}` : n.license);
+    const folhas = (n: No): string[] =>
+      n.license ? [folha(n) as string] : [...folhas(n.left as No), ...folhas(n.right as No)];
+    const satisfaz = (n: No, escolhidas: Set<string>): boolean =>
+      n.license
+        ? escolhidas.has(folha(n) as string)
+        : n.conjunction === 'and'
+          ? satisfaz(n.left as No, escolhidas) && satisfaz(n.right as No, escolhidas)
+          : satisfaz(n.left as No, escolhidas) || satisfaz(n.right as No, escolhidas);
+
     for (const [id, eleicao] of Object.entries(POLICY.licenseElections)) {
       expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
       expect(eleicao.expression).toBeTruthy();
       expect(eleicao.elected).toBeTruthy();
       expect(eleicao.rationale).toBeTruthy();
-      expect(Array.isArray(eleicao.mandatory)).toBe(true);
-      for (const termo of eleicao.mandatory) {
-        expect(eleicao.expression).toContain(termo);
-        expect(eleicao.elected).toContain(termo);
+      // Satisfazer a expressão subsume as duas conferências anteriores: a
+      // eleita é oferecida, e nenhum termo obrigatório fica de fora.
+      const ast = spdxParse(barraLegada(eleicao.expression));
+      const eleitas = new Set(folhas(spdxParse(barraLegada(eleicao.elected))));
+      expect(satisfaz(ast, eleitas)).toBe(true);
+    }
+  });
+
+  it('fixa revisão imutável em todo texto vendorizado, complemento inclusive', async () => {
+    const { POLICY } = await import('./legal/thirdparty-policy.mjs');
+    const vendorizados = [
+      ...Object.entries(POLICY.licenseFallbacks ?? {}),
+      ...Object.entries(POLICY.licenseSupplements ?? {}),
+    ];
+    expect(vendorizados.length).toBeGreaterThan(0);
+    for (const [id, entrada] of vendorizados) {
+      expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
+      expect(entrada.rationale).toBeTruthy();
+      expect(entrada.sourceRepository).toBeTruthy();
+      // Nome de branch ou tag não é proveniência: os dois se movem. Só commit
+      // completo prova de que bytes de upstream o texto local saiu.
+      expect(entrada.revision ?? '').toMatch(/^[0-9a-f]{40}$/u);
+      for (const chave of entrada.fragments) {
+        expect(POLICY.fragments[chave]).toBeTruthy();
       }
     }
   });

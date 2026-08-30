@@ -144,7 +144,15 @@ export const POLICY = Object.freeze({
     "BSD-2-Clause": Object.freeze([
       "Redistributions of source code must retain the above copyright notice",
     ]),
-    "BSD-3-Clause": Object.freeze(["Neither the name of"]),
+    // A clausula de nao-endosso e o que separa BSD-3-Clause de BSD-2-Clause.
+    // Nao se ancora no comeco dela: os pacotes substituem ali o nome do titular
+    // e pluralizam ("Neither the names of the Mozilla Foundation nor..."), o
+    // que fazia o BSD-3 legitimo do source-map-js passar por ausente. O trecho
+    // abaixo e literal no texto canonico e nas variantes, e nao existe no
+    // BSD-2-Clause, que nao tem clausula de nao-endosso nenhuma.
+    "BSD-3-Clause": Object.freeze([
+      "may be used to endorse or promote products derived from this software without specific prior written permission",
+    ]),
     ISC: Object.freeze([
       "provided that the above copyright notice and this permission notice appear in all copies",
     ]),

@@ -20,6 +20,7 @@
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
+| spdx-expression-parse | ^5.0.0 | MIT | Não | https://registry.npmjs.org/spdx-expression-parse |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |

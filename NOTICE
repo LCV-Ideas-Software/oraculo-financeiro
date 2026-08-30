@@ -11,4 +11,8 @@ ISC, BSD e Apache-2.0 exigem que o texto e a linha de copyright acompanhem a
 distribuição.
 
 Dependências de desenvolvimento não constam desses avisos porque não são
-servidas ao usuário.
+servidas ao usuário. A exceção é a ferramenta de build que injeta código próprio
+no pacote publicado: o Vite acrescenta ao ponto de entrada o runtime de
+module-preload dele, então é servido ao navegador e consta dos avisos, apesar da
+marcação de desenvolvimento. A exceção é declarada componente a componente em
+scripts/legal/thirdparty-policy.mjs, com o motivo e a evidência de cada uma.
