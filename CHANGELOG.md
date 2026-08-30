@@ -15,6 +15,23 @@
 
 ### Changed
 
+- O gate de avisos passa a aplicar a semantica oficial de plataforma do npm,
+  classificar o grafo por localizacao instalada (preservando aliases, versoes e
+  origens distintas), resolver links antes da validacao e exigir eleicoes SPDX
+  concretas e metadados de licenca verificaveis, vinculados ao artefato exato.
+  O texto integral e comprovado pelo Licensee oficial do GitHub, exigindo
+  matcher Exact e confianca 100; variantes legitimas nao reconhecidas ficam
+  presas a revisao explicita por origem, integridade, conjunto de arquivos e
+  SHA-256. Inspecoes manuais nao podem substituir declaracoes SPDX validas, e a
+  identidade de integridade passa pelo parser SRI estrito oficial do npm.
+  Ramos opcionais incompativeis agora sao podados com todos os descendentes no
+  grafo virtual oficial do lockfile, independente da plataforma do host, sem
+  remover um filho que tambem possua caminho compativel.
+  Politicas sem SRI so podem selecionar uma origem Git presa a commit completo,
+  e o intervalo Node do repositorio acompanha o requisito efetivo do `ssri`.
+  O Licensee também entra na manutenção nativa do Dependabot para Bundler; no
+  deploy, suas dependencias sao instaladas em modo congelado e sem restaurar
+  cache de CI antes da publicacao.
 - O Linear Release passa a usar a action oficial da Linear v0.16.0, fixada por SHA, sem alterar o gatilho pós-Deploy nem o SHA efetivamente publicado. A fila usa `queue: max`, e falhas da action tornam o workflow vermelho. Um teste de contrato também preserva os dois deploys oficiais do Wrangler e registra que não há envio direto ao Slack neste repositório.
 - Dependencias de desenvolvimento atualizadas, incluindo `typescript-eslint` 8.67.0 e Wrangler 4.123.0; o override vulneravel que rebaixava `undici` foi removido e o pacote raiz agora e explicitamente privado.
 - CodeQL, Dependency Review, Zizmor, OpenSSF Scorecard, GitHub Pages e deploy Cloudflare passam a usar apenas implementacoes oficiais com permissoes minimas e referencias externas fixadas por SHA.

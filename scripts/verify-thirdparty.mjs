@@ -3,10 +3,14 @@
 // manifesto real — não apenas iguais entre si. Três invariantes, todos
 // fail-closed:
 //   1. cópia raiz e public/legal/ byte-idênticas;
-//   2. cada dependência de package.json (deps+devDeps) tem linha com a versão
-//      EXATA, e nenhuma linha sobra;
-//   3. a licença de cada linha bate com o campo license do package-lock.json.
-import { readFileSync } from 'node:fs';
+//   2. cada dependência direta de package.json ou Gemfile tem linha, e nenhuma
+//      linha sobra;
+//   3. versão e licença batem com package-lock ou Gemfile.lock/gemspec;
+//   4. a versão do Licensee coincide com a política cujas exceções ela sustenta.
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+
+import { POLICY } from './legal/thirdparty-policy.mjs';
 
 const fail = (message) => {
   console.error(`THIRDPARTY inválido: ${message}`);
@@ -20,6 +24,7 @@ if (root !== publicCopy) fail('as duas cópias divergem (raiz × public/legal)')
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
 const manifest = { ...pkg.dependencies, ...pkg.devDependencies };
+const componentesEsperados = new Set(Object.keys(manifest));
 
 const rows = new Map();
 for (const match of root.matchAll(/^\| ([^ |]+) \| ([^ |]+) \| ([^|]+) \|/gm)) {
@@ -45,10 +50,83 @@ for (const [name, version] of Object.entries(manifest)) {
   if (row.license !== locked.license)
     fail(`licença divergente para ${name}: tabela=${row.license} lockfile=${locked.license}`);
 }
+
+if (existsSync('Gemfile')) {
+  // Bundler e RubyGems sao as fontes oficiais para interpretar Gemfile e lock;
+  // o gate nao tenta reimplementar a gramatica Ruby nem analisar o lock como
+  // texto. Somente dependencias diretas entram no inventario, como no npm.
+  const programaRuby = [
+    'specs=Bundler.load.specs.to_a.to_h { |s| [s.name,s] }',
+    'deps=Bundler.load.dependencies.map do |d|',
+    '  s=specs.fetch(d.name)',
+    '  {name:d.name, requirement:d.requirement.requirements.map { |op,v| [op,v.to_s] }, version:s.version.to_s, licenses:s.licenses}',
+    'end',
+    'puts JSON.generate(deps)',
+  ].join("\n");
+  const consulta = spawnSync(
+    'ruby',
+    ['-S', 'bundle', 'exec', 'ruby', '-rbundler', '-rjson', '-e', programaRuby],
+    {
+      encoding: 'utf8',
+      env: { ...process.env, BUNDLE_FROZEN: 'true' },
+      windowsHide: true,
+    },
+  );
+  if (consulta.error || consulta.status !== 0) {
+    fail(
+      `Bundler não pôde validar o inventário: ${consulta.error?.message || consulta.stderr.trim() || `status ${consulta.status}`}`,
+    );
+  }
+  let gems;
+  try {
+    gems = JSON.parse(consulta.stdout);
+  } catch {
+    fail('Bundler não devolveu JSON válido para as dependências diretas');
+  }
+  for (const gem of gems) {
+    if (
+      JSON.stringify(gem.requirement) !==
+      JSON.stringify([['=', gem.version]])
+    ) {
+      fail(
+        `a gem direta ${gem.name} deve ficar fixada exatamente à versão resolvida ${gem.version}`,
+      );
+    }
+    if (componentesEsperados.has(gem.name)) {
+      fail(`nome duplicado entre npm e Bundler no inventário: ${gem.name}`);
+    }
+    componentesEsperados.add(gem.name);
+    const row = rows.get(gem.name);
+    if (!row) fail(`gem direta sem linha na tabela: ${gem.name}`);
+    if (row.version !== gem.version) {
+      fail(
+        `versão divergente para ${gem.name}: tabela=${row.version} Gemfile.lock=${gem.version}`,
+      );
+    }
+    const licenca = gem.licenses.join(' OR ');
+    if (!licenca) fail(`gem ${gem.name} sem licença declarada no gemspec`);
+    if (row.license !== licenca) {
+      fail(
+        `licença divergente para ${gem.name}: tabela=${row.license} gemspec=${licenca}`,
+      );
+    }
+  }
+
+  const matcher = POLICY.licenseTextMatcher;
+  const detector = gems.find((gem) => gem.name === matcher?.gem);
+  if (!detector) fail('detector Licensee da política não é dependência direta do Gemfile');
+  if (detector.version !== matcher.version) {
+    fail(
+      `versão do detector diverge: política=${matcher.version} Gemfile.lock=${detector.version}; revalide todas as exceções de texto antes de atualizar`,
+    );
+  }
+}
 for (const name of rows.keys()) {
-  if (!(name in manifest)) fail(`linha sem dependência correspondente no package.json: ${name}`);
+  if (!componentesEsperados.has(name)) {
+    fail(`linha sem dependência correspondente nos manifestos: ${name}`);
+  }
 }
 
 console.log(
-  `THIRDPARTY válido: ${rows.size} componentes, cópias idênticas, fiéis ao package.json e ao lockfile.`,
+  `THIRDPARTY válido: ${rows.size} componentes, cópias idênticas, fiéis aos manifestos e lockfiles.`,
 );

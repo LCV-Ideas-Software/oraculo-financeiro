@@ -80,7 +80,8 @@ You will need:
 
 - A Cloudflare account ([free tier](https://www.cloudflare.com/plans/)) with Pages + D1 + Workers enabled.
 - The Cloudflare CLI [`wrangler`](https://developers.cloudflare.com/workers/wrangler/).
-- Node.js 22+.
+- Node.js 22.22.2 ou superior na linha 22, 24.15.0 ou superior na linha 24,
+  ou 26+.
 - A Google Cloud service account JSON key with Vertex AI access (the AI endpoints authenticate via `VERTEX_SA_KEY`).
 
 ### 1. Clone + install

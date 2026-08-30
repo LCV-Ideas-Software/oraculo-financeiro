@@ -12,6 +12,12 @@ const LEGAL_FILES = {
   THIRDPARTY: `${LEGAL_PUBLIC_BASE}THIRDPARTY.md`,
 } as const;
 
+// O texto integral das licenças de terceiros é grande e não é buscado junto com
+// os demais: seria uma centena de kilobytes carregados em toda visita para um
+// anexo que quase ninguém abre. Fica como link navegável, que é o que o NOTICE
+// promete ao citá-lo pelo nome.
+const THIRD_PARTY_NOTICES_URL = `${LEGAL_PUBLIC_BASE}THIRD-PARTY-NOTICES.txt`;
+
 type DocsState = {
   LICENSE: string;
   NOTICE: string;
@@ -136,6 +142,22 @@ export function LicencasModule() {
           Componentes de Terceiros (THIRDPARTY)
         </h2>
         <pre style={preStyle}>{content.THIRDPARTY}</pre>
+      </section>
+
+      <section style={sectionStyle}>
+        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
+          Texto Integral das Licenças de Terceiros
+        </h2>
+        <p style={paragraphStyle}>
+          O inventário acima nomeia cada componente e sua licença. O texto integral de cada uma delas, com as
+          respectivas linhas de copyright, é reproduzido em arquivo próprio, gerado a partir do package-lock.json a cada
+          publicação.
+        </p>
+        <p style={{ ...paragraphStyle, textIndent: 0 }}>
+          <a href={THIRD_PARTY_NOTICES_URL} style={{ color: '#1a73e8' }}>
+            Abrir THIRD-PARTY-NOTICES.txt
+          </a>
+        </p>
       </section>
     </div>
   );

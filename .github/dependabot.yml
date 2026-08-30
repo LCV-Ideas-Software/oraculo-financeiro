@@ -76,3 +76,20 @@ updates:
           - "minor"
           - "patch"
     open-pull-requests-limit: 10
+
+  # O gate legal usa o Licensee pelo Bundler. A manutencao dessa dependencia
+  # fica no proprio repositorio pela integracao nativa do Dependabot.
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "01:00"
+      timezone: "America/Los_Angeles"
+    cooldown:
+      default-days: 7
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 5

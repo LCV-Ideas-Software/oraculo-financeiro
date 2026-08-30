@@ -23,4 +23,10 @@ describe('configuração do Dependabot', () => {
       'versioning-strategy: increase-if-necessary',
     ]);
   });
+
+  it('mantém o Licensee sob atualização nativa do ecossistema Bundler', () => {
+    const bundler = ecosystemBlock('bundler');
+    expect(bundler).toContain('directory: "/"');
+    expect(bundler).toContain('interval: "daily"');
+  });
 });
