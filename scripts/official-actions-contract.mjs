@@ -5,7 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CHECKOUT_SHA = "3d3c42e5aac5ba805825da76410c181273ba90b1";
-const LINEAR_ACTION_SHA = "0a25abab892a91062ebf42260dbb2ce6277aa205";
+const LINEAR_ACTION_SHA = "3f31fcf14c110cc53579fcc3575a26d469c413b4";
 const WRANGLER_ACTION_SHA = "ebbaa1584979971c8614a24965b4405ff95890e0";
 
 const repositoryRoot = path.resolve(
@@ -152,7 +152,7 @@ test("Linear Release uses the pinned official action and lock entry", () => {
     linearRelease,
     /access_key: \$\{\{ secrets\.LINEAR_ACCESS_KEY \}\}/u,
   );
-  assert.match(linearRelease, /cli_version: v0\.16\.0/u);
+  assert.match(linearRelease, /cli_version: v0\.17\.1/u);
   assert.doesNotMatch(
     linearRelease,
     /CLI_URL|CLI_SHA256|linear-release-linux|curl\s+-|sha256sum/u,
@@ -160,7 +160,7 @@ test("Linear Release uses the pinned official action and lock entry", () => {
   assert.equal(occurrences(actionsLock, officialUse), 2);
   assert.match(
     actionsLock,
-    /'linear\/linear-release-action@0a25abab892a91062ebf42260dbb2ce6277aa205':[\s\S]*?ref: 'v0\.16\.0'/u,
+    /'linear\/linear-release-action@3f31fcf14c110cc53579fcc3575a26d469c413b4':[\s\S]*?ref: 'v0\.17\.1'/u,
   );
 });
 
