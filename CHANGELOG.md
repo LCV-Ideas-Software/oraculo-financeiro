@@ -15,6 +15,9 @@
 
 ### Changed
 
+- `npm-install-checks` foi atualizado para 9.0.0; os inventários legais raiz e
+  público acompanham o artefato BSD-2-Clause, cujo requisito de Node.js agora
+  coincide com o intervalo já adotado pelo repositório.
 - O gate de avisos passa a aplicar a semantica oficial de plataforma do npm,
   classificar o grafo por localizacao instalada (preservando aliases, versoes e
   origens distintas), resolver links antes da validacao e exigir eleicoes SPDX
