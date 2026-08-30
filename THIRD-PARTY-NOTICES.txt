@@ -1,10 +1,14 @@
 AVISOS DE TERCEIROS - Oraculo Financeiro
 
 Este arquivo reproduz o texto de licenca de cada componente de terceiro
-servido ao navegador. Ele acompanha o LICENSE, o NOTICE e o THIRDPARTY.md na
-superficie legal publicada.
+incorporado ao que este projeto publica: o bundle servido ao navegador e as
+Pages Functions executadas no servidor da Cloudflare. Ele acompanha o
+LICENSE, o NOTICE e o THIRDPARTY.md na superficie legal publicada.
 
 Componentes cobertos: 22
+  servidos ao navegador ...........: 5
+  Pages Functions (servidor) ......: 17
+  nos dois .......................: 0
   texto do pacote instalado: 21
   texto vendorizado ........: 1
 
@@ -19,6 +23,7 @@ Codigo-fonte do produto: https://github.com/LCV-Ideas-Software/oraculo-financeir
 ==============================================================================
 
 dayjs 1.11.20
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -48,6 +53,7 @@ SOFTWARE.
 ==============================================================================
 
 deepmerge 4.3.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- license.txt ---
@@ -77,6 +83,7 @@ THE SOFTWARE.
 ==============================================================================
 
 dom-serializer 3.1.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -92,6 +99,7 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ==============================================================================
 
 domelementtype 3.0.0
+Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-2-Clause
 
 --- LICENSE ---
@@ -111,6 +119,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 
 domhandler 6.0.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-2-Clause
 
 --- LICENSE ---
@@ -130,6 +139,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 
 domutils 4.0.2
+Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-2-Clause
 
 --- LICENSE ---
@@ -149,6 +159,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 
 entities 8.0.0
+Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-2-Clause
 
 --- LICENSE ---
@@ -168,6 +179,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 
 escape-string-regexp 4.0.0
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- license ---
@@ -185,6 +197,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ==============================================================================
 
 htmlparser2 12.0.0
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -211,6 +224,7 @@ IN THE SOFTWARE.
 ==============================================================================
 
 is-plain-object 5.0.0
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -240,6 +254,7 @@ THE SOFTWARE.
 ==============================================================================
 
 launder 1.7.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 Origem do texto: https://github.com/apostrophecms/apostrophe @ e9b0ab0849a5dfea0f75335fbdf99b5c6bf9e4b3
 Motivo do texto vendorizado: O pacote npm nao inclui arquivo de licenca e o README nao menciona licenca. No commit fixado o monorepo tampouco publica LICENSE, LICENSE.md ou LICENSE.txt na raiz nem em packages/launder, e a API do GitHub nao detecta licenca no repositorio. Texto canonico da MIT com a linha de copyright do titular declarado. Mesmo tratamento ja adotado na frota para este pacote e versao em astrologo-app, reverificado aqui de forma independente.
@@ -298,6 +313,7 @@ SOFTWARE.
 ==============================================================================
 
 lucide-react 1.33.0
+Escopo: navegador
 Licenca declarada: ISC
 
 --- LICENSE ---
@@ -349,6 +365,7 @@ SOFTWARE.
 ==============================================================================
 
 nanoid 3.3.18
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -377,6 +394,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ==============================================================================
 
 parse-srcset 1.0.2
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -406,6 +424,7 @@ SOFTWARE.
 ==============================================================================
 
 picocolors 1.1.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: ISC
 
 --- LICENSE ---
@@ -429,6 +448,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ==============================================================================
 
 postcss 8.5.26
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -457,6 +477,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ==============================================================================
 
 react-dom 19.2.8
+Escopo: navegador
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -486,6 +507,7 @@ SOFTWARE.
 ==============================================================================
 
 react 19.2.8
+Escopo: navegador
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -515,6 +537,7 @@ SOFTWARE.
 ==============================================================================
 
 sanitize-html 2.17.7
+Escopo: Pages Functions (servidor)
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -530,6 +553,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ==============================================================================
 
 scheduler 0.27.0
+Escopo: navegador
 Licenca declarada: MIT
 
 --- LICENSE ---
@@ -559,6 +583,7 @@ SOFTWARE.
 ==============================================================================
 
 source-map-js 1.2.1
+Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-3-Clause
 
 --- LICENSE ---
@@ -594,6 +619,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 
 vite 8.2.2
+Escopo: navegador
 Licenca declarada: MIT
 
 --- LICENSE.md ---

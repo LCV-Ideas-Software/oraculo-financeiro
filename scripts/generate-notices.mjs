@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Monta THIRD-PARTY-NOTICES.txt com o texto integral de licenca de cada
-// componente servido ao navegador.
+// componente incorporado ao que este projeto publica — o bundle servido ao
+// navegador e as Pages Functions executadas no servidor —, com o escopo de
+// cada um.
 //
 // Fecha em falha. Se qualquer componente distribuido ficar sem texto de
 // licenca, o processo termina com codigo diferente de zero e lista os
@@ -20,6 +22,7 @@
 //   node scripts/generate-notices.mjs            grava os arquivos
 //   node scripts/generate-notices.mjs --check    nao grava; falha se divergir
 
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -375,9 +378,11 @@ function analisarExpressao(expressao) {
 }
 
 // Uma folha e uma licenca — com a excecao acoplada, quando ha `WITH`, porque
-// `Apache-2.0 WITH LLVM-exception` e uma unica licenca efetiva, nao duas.
+// `Apache-2.0 WITH LLVM-exception` e uma unica licenca efetiva, nao duas; e com
+// o modificador `+` preservado, porque `GPL-2.0+` ("ou posterior") e um termo
+// juridicamente distinto de `GPL-2.0`, e o parser o representa a parte.
 const folhaComoTexto = (no) =>
-  no.exception ? `${no.license} WITH ${no.exception}` : no.license;
+  `${no.license}${no.plus ? "+" : ""}${no.exception ? ` WITH ${no.exception}` : ""}`;
 
 function folhasDaExpressao(no) {
   if (no.license) return [folhaComoTexto(no)];
@@ -498,10 +503,18 @@ function elegerLicencas(componentes) {
         );
         continue;
       }
-      // Uma unica pergunta no lugar de tres: o conjunto eleito satisfaz a
-      // expressao? Se satisfaz, nao cita licenca que ela nao ofereca e nao
-      // deixa de fora nenhum termo obrigatorio — as duas coisas decorrem da
-      // definicao de satisfacao, nao de uma conferencia a parte.
+      // Satisfazer a expressao garante que nenhum termo obrigatorio ficou de
+      // fora, mas NAO que todo termo eleito foi oferecido: "MIT OR Zlib" eleito
+      // para "MIT OR Apache-2.0" satisfaz pela MIT e ainda assim publicaria a
+      // Zlib, que o pacote nunca ofereceu. As duas conferencias sao distintas.
+      const oferecidas = new Set(folhas);
+      const forasteiras = [...eleitas.licencas].filter((l) => !oferecidas.has(l));
+      if (forasteiras.length) {
+        pendentes.push(
+          `${c.id}: a eleicao registrada "${explicita.elected}" cita ${forasteiras.join(", ")}, que a expressao "${c.licencaDeclarada}" nao oferece`,
+        );
+        continue;
+      }
       if (!satisfaz(ast, eleitas.licencas)) {
         const obrigatorias = [...licencasObrigatorias(ast)];
         pendentes.push(
@@ -554,6 +567,69 @@ function elegerLicencas(componentes) {
 // ------------------------------------------------------------------ montagem
 
 const lista = componentes();
+
+// ------------------------------------------------------------------- escopo
+
+// Nem tudo que e dependencia de producao e servido ao navegador: as Pages
+// Functions rodam no servidor da Cloudflare, e o que so elas importam nunca
+// entra no bundle. Afirmar "servido ao navegador" para todos os 22 seria
+// falso. O escopo de cada componente vem do alcance real no grafo instalado,
+// calculado pelo `npm query` — o Arborist e o mesmo que o npm usa — a partir
+// de raizes declaradas: as de producao do manifesto, separadas em navegador e
+// servidor pela politica, e as ferramentas de build que injetam runtime.
+function caminhoDoCliDoNpm() {
+  const candidatos = [
+    process.env.npm_execpath,
+    join(dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js"),
+    join(dirname(process.execPath), "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+  ].filter(Boolean);
+  const achado = candidatos.find((p) => existsSync(p));
+  if (!achado) falhar("npm nao localizado para calcular o alcance das dependencias:", candidatos);
+  return achado;
+}
+
+function alcanceNoGrafo(raizes, comDescendentes) {
+  if (!raizes.length) return new Set();
+  const seletor = raizes
+    .map((r) => (comDescendentes ? `[name="${r}"], [name="${r}"] *` : `[name="${r}"]`))
+    .join(", ");
+  const bruto = execFileSync(process.execPath, [caminhoDoCliDoNpm(), "query", seletor, "--json"], {
+    cwd: RAIZ,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return new Set(JSON.parse(bruto).map((n) => n.name));
+}
+
+const raizesServidor = Object.keys(POLICY.scope.npm.serverOnlyRoots || {});
+const raizesProducao = Object.keys(
+  JSON.parse(readFileSync(resolve(RAIZ, "package.json"), "utf8")).dependencies || {},
+);
+const raizesNavegador = raizesProducao.filter((r) => !raizesServidor.includes(r));
+const noNavegador = new Set([
+  ...alcanceNoGrafo(raizesNavegador, true),
+  // A ferramenta de build injeta o proprio runtime, nao a arvore dela.
+  ...alcanceNoGrafo(Object.keys(POLICY.scope.npm.runtimeInjectingBuildTools || {}), false),
+]);
+const noServidor = alcanceNoGrafo(raizesServidor, true);
+
+const semEscopo = [];
+for (const c of lista) {
+  const nav = noNavegador.has(c.nome);
+  const srv = noServidor.has(c.nome);
+  if (nav && srv) c.escopo = "navegador e Pages Functions (servidor)";
+  else if (nav) c.escopo = "navegador";
+  else if (srv) c.escopo = "Pages Functions (servidor)";
+  else semEscopo.push(`${c.id}: nao e alcancavel de nenhuma raiz declarada`);
+}
+if (semEscopo.length) {
+  falhar(
+    "Componentes distribuidos sem escopo determinavel. Toda raiz de producao precisa estar classificada como navegador ou servidor na politica:",
+    semEscopo,
+  );
+}
+const contarEscopo = (rotulo) => lista.filter((c) => c.escopo === rotulo).length;
 
 const semTexto = [];
 for (const c of lista) {
@@ -687,10 +763,14 @@ const linhas = [
   "AVISOS DE TERCEIROS - Oraculo Financeiro",
   "",
   "Este arquivo reproduz o texto de licenca de cada componente de terceiro",
-  "servido ao navegador. Ele acompanha o LICENSE, o NOTICE e o THIRDPARTY.md na",
-  "superficie legal publicada.",
+  "incorporado ao que este projeto publica: o bundle servido ao navegador e as",
+  "Pages Functions executadas no servidor da Cloudflare. Ele acompanha o",
+  "LICENSE, o NOTICE e o THIRDPARTY.md na superficie legal publicada.",
   "",
   `Componentes cobertos: ${lista.length}`,
+  `  servidos ao navegador ...........: ${contarEscopo("navegador")}`,
+  `  Pages Functions (servidor) ......: ${contarEscopo("Pages Functions (servidor)")}`,
+  `  nos dois .......................: ${contarEscopo("navegador e Pages Functions (servidor)")}`,
   `  texto do pacote instalado: ${lista.filter((c) => c.origemDoTexto === "pacote instalado").length}`,
   `  texto vendorizado ........: ${lista.filter((c) => c.origemDoTexto === "fragmento vendorizado").length}`,
   "",
@@ -734,6 +814,7 @@ for (const c of lista) {
   if (quantosArtefatosPorId.get(c.id) > 1) {
     linhas.push(`Origem do artefato: ${c.origemPacote ?? "nao declarada no lockfile"}`);
   }
+  linhas.push(`Escopo: ${c.escopo}`);
   if (c.licencaDeclarada) linhas.push(`Licenca declarada: ${c.licencaDeclarada}`);
   if (c.eleicao) {
     linhas.push(

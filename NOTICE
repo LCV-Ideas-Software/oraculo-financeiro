@@ -4,11 +4,12 @@ AVISOS DE TERCEIROS (THIRD-PARTY NOTICES)
 -----------------------------------------
 O inventário das dependências deste projeto está em THIRDPARTY.md.
 
-O texto integral de licença de cada componente de terceiro efetivamente servido
-ao navegador está em THIRD-PARTY-NOTICES.txt, que acompanha este arquivo na
-superfície legal publicada. Nomear a licença não preserva o aviso dela: MIT,
-ISC, BSD e Apache-2.0 exigem que o texto e a linha de copyright acompanhem a
-distribuição.
+O texto integral de licença de cada componente de terceiro incorporado ao que
+este projeto publica — o bundle servido ao navegador e as Pages Functions
+executadas no servidor — está em THIRD-PARTY-NOTICES.txt, com o escopo de cada
+um, que acompanha este arquivo na superfície legal publicada. Nomear a licença
+não preserva o aviso dela: MIT, ISC, BSD e Apache-2.0 exigem que o texto e a
+linha de copyright acompanhem a distribuição.
 
 Dependências de desenvolvimento não constam desses avisos porque não são
 servidas ao usuário. A exceção é a ferramenta de build que injeta código próprio

@@ -46,6 +46,23 @@ export const POLICY = Object.freeze({
         }),
       }),
 
+      // Raizes de producao que rodam SO no servidor — Cloudflare Pages
+      // Functions — e nunca entram no bundle do navegador. Elas e tudo o que
+      // so e alcancavel a partir delas recebem escopo "servidor" nos avisos;
+      // o alcance e calculado pelo npm query, nao por travessia propria.
+      //
+      // Verificado em 30/08/2026: `sanitize-html` e importado apenas por
+      // functions/api/_shared/security.ts; nenhum arquivo em src/ o importa,
+      // e src/ so importa react, react-dom e lucide-react de terceiros.
+      serverOnlyRoots: Object.freeze({
+        "sanitize-html": Object.freeze({
+          reason:
+            "Sanitiza entrada nas Pages Functions. Nenhum modulo de src/ o importa, entao ele e sua arvore nao entram no bundle do navegador.",
+          evidence:
+            "grep -rn sanitize-html src/ functions/ em 30/08/2026: uma unica ocorrencia, em functions/api/_shared/security.ts.",
+        }),
+      }),
+
       // Plataforma de referencia para os campos `os`, `cpu` e `libc` do npm.
       // O artefato aqui e um bundle de navegador, construido no runner Linux
       // do deploy: pacote nativo restrito a outra plataforma nao e instalado e

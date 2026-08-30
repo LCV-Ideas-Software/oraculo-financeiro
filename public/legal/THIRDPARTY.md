@@ -47,6 +47,7 @@ ao lado do componente em `THIRD-PARTY-NOTICES.txt`.
 ## Avisos de terceiros
 
 O inventário acima nomeia as licenças. O **texto integral** de cada componente
-servido ao navegador está em `THIRD-PARTY-NOTICES.txt`, gerado por
+incorporado ao que o projeto publica — no bundle do navegador ou nas Pages
+Functions do servidor, com o escopo de cada um — está em `THIRD-PARTY-NOTICES.txt`, gerado por
 `npm run notices` e conferido por `npm run notices:check` nos workflows de
 `pull_request` e de deploy.
