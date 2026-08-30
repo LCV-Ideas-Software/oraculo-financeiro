@@ -338,6 +338,29 @@ function ofereceEscolha(expressao) {
   return /\bOR\b/u.test(expressao) || expressao.includes("/");
 }
 
+// A licenca eleita precisa estar efetivamente reproduzida no artefato. Sem
+// isso, o arquivo pode afirmar Apache-2.0 enquanto reproduz o texto da CC0.
+function corroborada(licenca, textos) {
+  const corpo = textos.map((t) => t.texto).join("\n");
+  const conjuntos = licenca
+    .split(/\bAND\b/u)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  for (const termo of conjuntos) {
+    const marcadores = POLICY.licenseTextMarkers[termo];
+    if (!marcadores) {
+      return { ok: false, motivo: `sem marcador declarado para ${termo}` };
+    }
+    if (!marcadores.some((m) => corpo.includes(m))) {
+      return {
+        ok: false,
+        motivo: `nenhum marcador de ${termo} aparece no texto reproduzido`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
 function elegerLicencas(componentes) {
   const pendentes = [];
   for (const c of componentes) {
@@ -346,6 +369,21 @@ function elegerLicencas(componentes) {
 
     const explicita = POLICY.licenseElections[c.id];
     if (explicita) {
+      // Entrada obsoleta ou com erro de digitacao nao pode aplicar uma escolha
+      // que o pacote nunca ofereceu.
+      if (explicita.expression !== expressao) {
+        pendentes.push(
+          `${c.id}: a politica registra a expressao "${explicita.expression}" mas o pacote declara "${expressao}"`,
+        );
+        continue;
+      }
+      const corr = corroborada(explicita.elected, c.textos || []);
+      if (!corr.ok) {
+        pendentes.push(
+          `${c.id}: eleicao registrada de ${explicita.elected} nao se sustenta — ${corr.motivo}`,
+        );
+        continue;
+      }
       c.eleicao = { licenca: explicita.elected, origem: "registrada na politica" };
       continue;
     }
@@ -357,12 +395,22 @@ function elegerLicencas(componentes) {
       );
       continue;
     }
-    const eleita = POLICY.licenseElectionPreference.find((p) =>
+    // Elege-se o primeiro termo que a preferencia indique E cujo texto esteja
+    // de fato reproduzido. Preferir um termo sem texto produziria afirmacao
+    // falsa; se nenhum se sustentar, o gate reprova e pede decisao explicita.
+    const candidatos = POLICY.licenseElectionPreference.filter((p) =>
       termos.includes(p),
     );
-    if (!eleita) {
+    if (!candidatos.length) {
       pendentes.push(
         `${c.id}: nenhum termo de "${expressao}" consta da ordem de preferencia; registre a eleicao em licenseElections`,
+      );
+      continue;
+    }
+    const eleita = candidatos.find((p) => corroborada(p, c.textos || []).ok);
+    if (!eleita) {
+      pendentes.push(
+        `${c.id}: nenhum termo de "${expressao}" tem o texto reproduzido no artefato; registre a eleicao em licenseElections`,
       );
       continue;
     }
@@ -379,7 +427,6 @@ function elegerLicencas(componentes) {
 // ------------------------------------------------------------------ montagem
 
 const lista = componentes();
-elegerLicencas(lista);
 
 const semTexto = [];
 for (const c of lista) {
@@ -412,6 +459,10 @@ if (semTexto.length) {
     semTexto,
   );
 }
+
+// A eleicao roda depois da coleta porque precisa do texto efetivamente
+// reproduzido: so se elege licenca que acompanha o artefato.
+elegerLicencas(lista);
 
 const barra = "=".repeat(78);
 const linhas = [

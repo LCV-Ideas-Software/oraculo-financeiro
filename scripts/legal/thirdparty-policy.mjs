@@ -80,8 +80,53 @@ export const POLICY = Object.freeze({
     "Zlib",
   ]),
 
+  // Corroboracao da eleicao pelo texto efetivamente reproduzido.
+  //
+  // Eleger uma licenca cujo texto nao acompanha o artefato produz uma afirmacao
+  // falsa. Cada identificador elegivel declara aqui um trecho caracteristico do
+  // CORPO da sua propria licenca, e a eleicao so vale se ao menos um deles
+  // aparecer no que foi reproduzido.
+  //
+  // Os trechos precisam existir so no corpo. Frases como "Apache License"
+  // aparecem tambem em arquivos que apenas APONTAM para a licenca sem
+  // reproduzi-la, e aceitar isso faria o gate corroborar um ponteiro.
+  //
+  // Isto nao e deteccao de licenca: e uma tabela declarada e auditavel. Um
+  // identificador sem marcador nao pode ser eleito, e o gate diz isso em vez de
+  // aceitar em silencio.
+  licenseTextMarkers: Object.freeze({
+    MIT: Object.freeze(["Permission is hereby granted, free of charge"]),
+    "MIT-0": Object.freeze(["Permission is hereby granted, free of charge"]),
+    "Apache-2.0": Object.freeze([
+      "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION",
+    ]),
+    "BSD-2-Clause": Object.freeze([
+      "Redistributions of source code must retain the above copyright notice",
+    ]),
+    "BSD-3-Clause": Object.freeze(["Neither the name of"]),
+    ISC: Object.freeze([
+      "Permission to use, copy, modify, and/or distribute this software",
+    ]),
+    "0BSD": Object.freeze([
+      "Permission to use, copy, modify, and/or distribute this software",
+    ]),
+    "CC0-1.0": Object.freeze(["CC0 1.0 Universal", "Creative Commons Legal Code"]),
+    Unlicense: Object.freeze([
+      "This is free and unencumbered software released into the public domain",
+    ]),
+    Zlib: Object.freeze([
+      "altered source versions must be plainly marked",
+    ]),
+    "MPL-2.0": Object.freeze(["Mozilla Public License"]),
+    "BSL-1.0": Object.freeze(["Boost Software License"]),
+  }),
+
   // Eleicoes explicitas, por `<nome>@<versao>`. Necessarias para toda
   // expressao que nao seja uma das duas formas triviais.
+  //
+  // `expression` e conferida contra o que o pacote declara: entrada obsoleta ou
+  // com erro de digitacao reprova em vez de aplicar uma escolha que o pacote
+  // nunca ofereceu.
   licenseElections: Object.freeze({}),
 
   // Texto vendorizado. O sha256 e do arquivo inteiro, cabecalho de proveniencia
