@@ -17,7 +17,7 @@
 | happy-dom | ^20.11.6 | MIT | Não | https://registry.npmjs.org/happy-dom |
 | licensee | 10.1.0 | MIT | Não | https://rubygems.org/gems/licensee/versions/10.1.0 |
 | lucide-react | ^1.31.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
-| npm-install-checks | 8.0.0 | BSD-2-Clause | Não | https://registry.npmjs.org/npm-install-checks |
+| npm-install-checks | 9.0.0 | BSD-2-Clause | Não | https://registry.npmjs.org/npm-install-checks |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
