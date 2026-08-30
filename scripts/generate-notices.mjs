@@ -28,17 +28,39 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Implementacao de referencia da jslicense, a mesma que o npm usa para validar
-// o campo `license`. Dependencia de desenvolvimento: roda no gate, nao vai
-// para o pacote servido ao navegador.
+// `spdx-expression-parse` e a implementacao de referencia da jslicense para o
+// campo `license`. `npm-install-checks`, usado pelo helper de alcance, aplica a
+// mesma semantica de `os`, `cpu` e `libc` da instalacao. Sao dependencias de
+// desenvolvimento: rodam no gate, nao vao para o navegador.
 import spdxParse from "spdx-expression-parse";
 
+import {
+  descreverFalhaDeSelecao,
+  selecionarRegistroDoArtefato,
+} from "./legal/artifact-policy.mjs";
+import { corroborarTextosDeLicenca } from "./legal/license-text.mjs";
+import {
+  consultarArvoreNpm,
+  criarComponenteNpm,
+  descreverRaizNpm,
+  derivarAlcanceNpm,
+  ehEntradaInstaladaNpm,
+  ehLinkDiretoDaRaizNpm,
+  filtrarRaizesCompativeisNpm,
+  mapaDeLinksNpm,
+  mesclarOcorrenciaNpm,
+  nomesDasRaizesDeProducaoNpm,
+  plataformaExcluidaNpm,
+  resolverEntradaNpm,
+} from "./legal/npm-reachability.mjs";
+import { expressaoTemDisjuncao } from "./legal/spdx-election.mjs";
 import { POLICY } from "./legal/thirdparty-policy.mjs";
+import { validarInspecaoManual } from "./legal/unverifiable-license.mjs";
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MODO_CHECK = process.argv.includes("--check");
 
-const sha256 = (t) => createHash("sha256").update(t, "utf8").digest("hex");
+const sha256 = (dados) => createHash("sha256").update(dados).digest("hex");
 const paraLf = (t) => t.split("\r\n").join("\n");
 
 function falhar(titulo, linhas) {
@@ -54,21 +76,25 @@ const fragmentos = new Map();
 {
   const divergentes = [];
   for (const [chave, frag] of Object.entries(POLICY.fragments)) {
+    let bytes;
     let texto;
     try {
-      texto = readFileSync(resolve(RAIZ, frag.path), "utf8");
+      bytes = readFileSync(resolve(RAIZ, frag.path));
+      texto = bytes.toString("utf8");
     } catch {
       divergentes.push(`${chave}: arquivo ausente ou ilegivel em ${frag.path}`);
       continue;
     }
-    const h = sha256(texto);
+    const h = sha256(bytes);
     if (h !== frag.sha256) {
       divergentes.push(
         `${chave}: sha256 ${h} nao confere com ${frag.sha256} declarado`,
       );
       continue;
     }
-    fragmentos.set(chave, texto);
+    // Guarde a evidencia calculada dos bytes lidos. O fallback abaixo nao
+    // reutiliza o digest declarado na POLICY como se fosse uma observacao.
+    fragmentos.set(chave, { texto, sha256: h });
   }
   if (divergentes.length) {
     falhar("Fragmentos de licenca divergem da politica declarada:", divergentes);
@@ -165,9 +191,17 @@ function textosDeLicenca(dir) {
     // uma janela entre as duas chamadas. Um diretorio faz readFileSync lancar
     // EISDIR, que o catch trata, com o mesmo efeito e sem a janela.
     try {
-      const t = paraLf(readFileSync(join(dir, a), "utf8")).trim();
+      const caminho = join(dir, a);
+      const bytes = readFileSync(caminho);
+      const t = paraLf(bytes.toString("utf8")).trim();
       if (!t) continue;
-      partes.push({ arquivo: a, texto: t });
+      partes.push({
+        arquivo: a,
+        texto: t,
+        caminho,
+        portador: nomesPortadores.has(a),
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
       if (nomesPortadores.has(a)) portadorLido = true;
     } catch {
       /* nao e arquivo legivel: segue */
@@ -189,27 +223,12 @@ let plataformaExcluidos = [];
 // A referencia e a plataforma do ARTEFATO declarada na politica, nao a da
 // maquina que executa: filtrar pelo host faria o conjunto de avisos mudar
 // conforme onde o comando roda. `libc` entra junto, como o npm documenta.
-function plataformaExcluida(meta) {
-  const casa = (lista, atual) => {
-    if (!Array.isArray(lista) || !lista.length) return true;
-    if (atual === null || atual === undefined) return true;
-    const negados = lista.filter((v) => v.startsWith("!")).map((v) => v.slice(1));
-    const permitidos = lista.filter((v) => !v.startsWith("!"));
-    if (negados.includes(atual)) return false;
-    return permitidos.length === 0 || permitidos.includes(atual);
-  };
-  const alvo = POLICY.scope.npm;
-  return (
-    !casa(meta.os, alvo.targetOs) ||
-    !casa(meta.cpu, alvo.targetCpu) ||
-    !casa(meta.libc, alvo.targetLibc)
-  );
-}
+const lockNpm = JSON.parse(
+  readFileSync(resolve(RAIZ, POLICY.scope.npm.lock), "utf8"),
+);
 
 function componentes() {
-  const lock = JSON.parse(
-    readFileSync(resolve(RAIZ, POLICY.scope.npm.lock), "utf8"),
-  );
+  const lock = lockNpm;
 
   // Um lockfile v1 guarda a arvore em `dependencies`, nao em `packages`. Tratar
   // o indice ausente como conjunto vazio aprovaria um arquivo de avisos com
@@ -253,49 +272,55 @@ function componentes() {
 
   const marcador = POLICY.scope.npm.excludeDevMarker;
   const saida = [];
-  const vistos = new Set();
+  const porIdentidade = new Map();
   const naoResolvidos = [];
   const excluidosPorPlataforma = [];
   for (const [chave, metaOriginal] of Object.entries(lock.packages)) {
-    if (!chave.startsWith("node_modules/")) continue;
+    if (!ehEntradaInstaladaNpm(chave)) continue;
     // A marcacao `dev` diz de onde a dependencia foi alcancada, nao se ela
     // contribui codigo ao artefato. Ferramentas de build que injetam runtime
     // sao declaradas na politica e entram apesar dela.
     const nomeDaEntrada = nomeDaChaveDoLock(chave);
+    const linkDiretoDaRaiz = ehLinkDiretoDaRaizNpm(chave, nomeDaEntrada);
     const injetaRuntime = Boolean(
-      POLICY.scope.npm.runtimeInjectingBuildTools?.[nomeDaEntrada],
+      linkDiretoDaRaiz &&
+        POLICY.scope.npm.runtimeInjectingBuildTools?.[nomeDaEntrada],
     );
     if (metaOriginal[marcador] === true && !injetaRuntime) continue;
 
     // Um link de workspace nao recebe a marcacao `dev` mesmo quando a raiz so o
     // declara em devDependencies, e o alvo resolvido tampouco recupera essa
     // informacao. O alcance vem, entao, das secoes da raiz.
-    if (metaOriginal.link === true) {
+    if (metaOriginal.link === true && linkDiretoDaRaiz) {
       const nomeLink = nomeDaChaveDoLock(chave);
       if (devNaRaiz.has(nomeLink) && !producaoNaRaiz.has(nomeLink)) continue;
-    }
-
-    if (plataformaExcluida(metaOriginal)) {
-      excluidosPorPlataforma.push(nomeDaChaveDoLock(chave));
-      continue;
     }
 
     // Uma entrada com `link: true` (dependencia `file:` ou de workspace) nao
     // carrega versao nem licenca: esses metadados vivem na entrada alvo. Pular
     // por ausencia de versao faria o componente sumir dos avisos sem que o
     // gate reclamasse, que e exatamente o oposto de fechar em falha.
-    let meta = metaOriginal;
-    if (metaOriginal.link === true) {
-      const alvo = metaOriginal.resolved
-        ? lock.packages[metaOriginal.resolved]
-        : null;
-      if (!alvo) {
+    const resolvida = resolverEntradaNpm(lock.packages, chave, metaOriginal);
+    if (resolvida.erro) {
+      naoResolvidos.push(resolvida.erro);
+      continue;
+    }
+    const { meta, origem: origemDaIdentidade, localizacoes } = resolvida;
+
+    // A entrada de um link so aponta para o alvo. As restricoes de plataforma
+    // pertencem ao package.json efetivamente executado, que e o alvo resolvido.
+    // Aplicar o filtro antes desta resolucao aprovaria um link para pacote
+    // incompativel. `npm-install-checks` preserva inclusive o wildcard `any`.
+    if (plataformaExcluidaNpm(meta, POLICY.scope.npm)) {
+      if (meta.optional !== true) {
         naoResolvidos.push(
-          `${chave}: entrada com link nao resolvida (resolved=${metaOriginal.resolved ?? "ausente"})`,
+          `${chave}: dependencia obrigatoria e incompativel com a plataforma-alvo ` +
+            `${POLICY.scope.npm.targetOs}/${POLICY.scope.npm.targetCpu}/${POLICY.scope.npm.targetLibc}`,
         );
-        continue;
+      } else {
+        excluidosPorPlataforma.push(nomeDaChaveDoLock(chave));
       }
-      meta = { ...alvo, name: alvo.name || metaOriginal.name };
+      continue;
     }
 
     const nome = meta.name || nomeDaChaveDoLock(chave);
@@ -320,24 +345,35 @@ function componentes() {
     // do alvo: a entrada-alvo de um pacote de workspace nao tem `resolved`, e
     // dois links para alvos diferentes de mesmo nome e versao colapsariam num
     // componente so. Fora de link, `metaOriginal` e o proprio `meta`.
-    const origemDaIdentidade =
-      metaOriginal.link === true ? metaOriginal.resolved : meta.resolved;
     const identidade = `${id}|${origemDaIdentidade ?? ""}`;
-    if (vistos.has(identidade)) continue;
-    vistos.add(identidade);
-    saida.push({
+    // `npm query` representa um Link pelo alvo real. Guardar os dois lados
+    // associa o componente tanto ao caminho instalado quanto ao no oficial
+    // cuja relacao `to` descreve os descendentes.
+    const ocorrencia = criarComponenteNpm({
       nome,
       versao,
-      id,
-      licencaDeclarada: meta.license || null,
-      // De onde o pacote veio de fato. Um fallback so pode valer para o
-      // artefato do registro canonico: trocar a dependencia por um git, um
-      // `file:` ou outro registro mantendo nome e versao nao pode herdar a
-      // proveniencia travada de outro pacote.
-      origemPacote: meta.resolved || null,
+      meta,
+      origem: origemDaIdentidade,
+      localizacoes,
       injetaRuntime,
       diretorio: acharDiretorio(chave, nome, versao),
     });
+    const existente = porIdentidade.get(identidade);
+    if (existente) {
+      const mescla = mesclarOcorrenciaNpm(existente, ocorrencia);
+      if (!mescla.ok) {
+        naoResolvidos.push(
+          `${id}: a origem "${origemDaIdentidade ?? "ausente"}" aparece com integridades divergentes no lockfile`,
+        );
+      }
+      continue;
+    }
+    // De onde o pacote veio de fato. Um fallback so pode valer para o
+    // artefato do registro canonico: trocar a dependencia por um git, um
+    // `file:` ou outro registro mantendo nome e versao nao pode herdar a
+    // proveniencia travada de outro pacote.
+    porIdentidade.set(identidade, ocorrencia);
+    saida.push(ocorrencia);
   }
   if (naoResolvidos.length) {
     falhar(
@@ -413,46 +449,52 @@ function satisfaz(no, escolhidas) {
     : satisfaz(no.left, escolhidas) || satisfaz(no.right, escolhidas);
 }
 
-// A licenca eleita precisa estar efetivamente reproduzida no artefato. Sem
-// isso, o arquivo pode afirmar Apache-2.0 enquanto reproduz o texto da CC0.
-//
-// O texto das licencas vem quebrado em larguras diferentes conforme o pacote: o
-// LICENSE-MIT do unicode-ident quebra "this permission notice / shall be
-// included" no meio da frase. A caixa tambem varia entre o marcador declarado e
-// o texto canonico, e ha pacote que publica a licenca inteira com "// " na
-// frente de cada linha, por ser copiada do cabecalho do fonte. As tres sao
-// diferencas tipograficas, nao juridicas, e sao normalizadas dos dois lados
-// antes de comparar. A normalizacao so remove; nunca insere texto que o arquivo
-// nao tenha.
-const normalizarParaComparar = (t) =>
-  t
-    .split("\n")
-    .map((l) => l.replace(/^\s*(?:\/\/+|#+|\*+)\s?/u, ""))
-    .join("\n")
-    .replace(/\s+/gu, " ")
-    .trim()
-    .toLowerCase();
-
-function corroboradas(licencas, textos) {
-  const corpo = normalizarParaComparar(textos.map((t) => t.texto).join("\n"));
-  for (const termo of licencas) {
-    const marcadores = POLICY.licenseTextMarkers[termo];
-    if (!marcadores) return { ok: false, motivo: `sem marcador declarado para ${termo}` };
-    if (!marcadores.some((m) => corpo.includes(normalizarParaComparar(m)))) {
+// A licenca eleita precisa estar efetivamente reproduzida no artefato. A prova
+// padrao e delegada ao Licensee, detector oficial usado pelo GitHub, exigindo o
+// matcher Exact com confianca 100. Variantes legitimas que ele nao reconhece
+// so passam por revisao explicita, presa a identidade do artefato e ao sha256
+// de cada arquivo portador; similaridade e marcadores locais nao sao aceitos.
+function corroboradas(licencas, componente) {
+  const entrada = POLICY.licenseTextReviewOverrides?.[componente.id];
+  let revisao;
+  if (entrada) {
+    const selecao = selecionarRegistroDoArtefato(entrada, componente);
+    if (!selecao.ok) {
       return {
         ok: false,
-        motivo: `nenhum marcador de ${termo} aparece no texto reproduzido`,
+        motivo: descreverFalhaDeSelecao(selecao, componente),
       };
     }
+    revisao = selecao.registro;
+    componente.revisaoDoTexto = revisao;
+  } else if (componente.fallback) {
+    revisao = {
+      licenses: [componente.fallback.license],
+      rationale: componente.fallback.rationale,
+      files: Object.fromEntries(
+        (componente.textos || []).map((texto) => [
+          texto.arquivo,
+          texto.sha256,
+        ]),
+      ),
+    };
   }
-  return { ok: true };
+  return corroborarTextosDeLicenca({
+    licencas,
+    textos: componente.textos || [],
+    revisao,
+  });
 }
 
 // A eleicao registrada e escrita como expressao (`MIT AND Unicode-3.0`); as
 // licencas efetivamente assumidas sao as folhas dela.
 function licencasDaEleicao(elected) {
   const { ast, erro } = analisarExpressao(elected);
-  return erro ? { erro } : { licencas: new Set(folhasDaExpressao(ast)) };
+  if (erro) return { erro };
+  return {
+    licencas: new Set(folhasDaExpressao(ast)),
+    disjuntiva: expressaoTemDisjuncao(ast),
+  };
 }
 
 function elegerLicencas(componentes) {
@@ -481,8 +523,14 @@ function elegerLicencas(componentes) {
     // tambem os componentes sem nenhuma expressao composta.
     if (folhas.length === 1) continue;
 
-    const explicita = POLICY.licenseElections[c.id];
-    if (explicita) {
+    const entradaExplicita = POLICY.licenseElections[c.id];
+    if (entradaExplicita) {
+      const selecao = selecionarRegistroDoArtefato(entradaExplicita, c);
+      if (!selecao.ok) {
+        pendentes.push(descreverFalhaDeSelecao(selecao, c));
+        continue;
+      }
+      const explicita = selecao.registro;
       // Entrada obsoleta ou com erro de digitacao nao pode aplicar uma escolha
       // que o pacote nunca ofereceu: a expressao registrada e conferida contra
       // o que o pacote declara hoje.
@@ -500,6 +548,15 @@ function elegerLicencas(componentes) {
       if (eleitas.erro) {
         pendentes.push(
           `${c.id}: a eleicao registrada "${explicita.elected}" nao e expressao SPDX valida (${eleitas.erro})`,
+        );
+        continue;
+      }
+      // Uma politica `elected: "MIT OR Apache-2.0"` nao elege nada: ainda
+      // deixa duas alternativas abertas. A eleicao precisa ser uma atribuicao
+      // concreta, embora possa somar obrigacoes com AND.
+      if (eleitas.disjuntiva) {
+        pendentes.push(
+          `${c.id}: a eleicao registrada "${explicita.elected}" ainda contem OR; registre uma escolha concreta`,
         );
         continue;
       }
@@ -525,7 +582,7 @@ function elegerLicencas(componentes) {
         );
         continue;
       }
-      const corr = corroboradas(eleitas.licencas, c.textos || []);
+      const corr = corroboradas(eleitas.licencas, c);
       if (!corr.ok) {
         pendentes.push(
           `${c.id}: eleicao registrada de ${explicita.elected} nao se sustenta — ${corr.motivo}`,
@@ -546,7 +603,7 @@ function elegerLicencas(componentes) {
       (p) =>
         folhas.includes(p) &&
         satisfaz(ast, new Set([p])) &&
-        corroboradas([p], c.textos || []).ok,
+        corroboradas([p], c).ok,
     );
     if (!eleita) {
       pendentes.push(
@@ -588,24 +645,33 @@ function caminhoDoCliDoNpm() {
   return achado;
 }
 
+const arvoreNpm = consultarArvoreNpm({
+  raiz: RAIZ,
+  caminhoDoNpm: caminhoDoCliDoNpm(),
+});
+const linksNpm = mapaDeLinksNpm(lockNpm.packages);
+
+function descreverRaizDoGrafo(nome) {
+  return descreverRaizNpm(lockNpm.packages, nome);
+}
+
 function alcanceNoGrafo(raizes, comDescendentes) {
-  if (!raizes.length) return new Set();
-  const seletor = raizes
-    .map((r) => (comDescendentes ? `[name="${r}"], [name="${r}"] *` : `[name="${r}"]`))
-    .join(", ");
-  const bruto = execFileSync(process.execPath, [caminhoDoCliDoNpm(), "query", seletor, "--json"], {
-    cwd: RAIZ,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: ["ignore", "pipe", "ignore"],
+  return derivarAlcanceNpm({
+    arvore: arvoreNpm,
+    raizes: raizes.map(descreverRaizDoGrafo),
+    comDescendentes,
+    links: linksNpm,
   });
-  return new Set(JSON.parse(bruto).map((n) => n.name));
 }
 
 const raizesServidor = Object.keys(POLICY.scope.npm.serverOnlyRoots || {});
-const raizesProducao = Object.keys(
-  JSON.parse(readFileSync(resolve(RAIZ, "package.json"), "utf8")).dependencies || {},
-);
+const raizesProducao = filtrarRaizesCompativeisNpm({
+  packages: lockNpm.packages,
+  nomes: nomesDasRaizesDeProducaoNpm(
+    JSON.parse(readFileSync(resolve(RAIZ, "package.json"), "utf8")),
+  ),
+  alvo: POLICY.scope.npm,
+});
 const raizesNavegador = raizesProducao.filter((r) => !raizesServidor.includes(r));
 const noNavegador = new Set([
   ...alcanceNoGrafo(raizesNavegador, true),
@@ -616,8 +682,8 @@ const noServidor = alcanceNoGrafo(raizesServidor, true);
 
 const semEscopo = [];
 for (const c of lista) {
-  const nav = noNavegador.has(c.nome);
-  const srv = noServidor.has(c.nome);
+  const nav = c.localizacoes.some((p) => noNavegador.has(p));
+  const srv = c.localizacoes.some((p) => noServidor.has(p));
   if (nav && srv) c.escopo = "navegador e Pages Functions (servidor)";
   else if (nav) c.escopo = "navegador";
   else if (srv) c.escopo = "Pages Functions (servidor)";
@@ -633,22 +699,25 @@ const contarEscopo = (rotulo) => lista.filter((c) => c.escopo === rotulo).length
 
 const semTexto = [];
 for (const c of lista) {
-  const fallback = POLICY.licenseFallbacks[c.id];
-  if (fallback) {
-    // O fallback carrega proveniencia travada num commit especifico. Aplica-lo
-    // a um pacote que passou a vir de outra origem publicaria a proveniencia
-    // de um artefato pelo de outro.
-    if (!(c.origemPacote || "").startsWith("https://registry.npmjs.org/")) {
-      semTexto.push(
-        `${c.id}: tem fallback declarado, mas o lockfile resolve para "${c.origemPacote ?? "origem ausente"}", que nao e o registro canonico; a proveniencia travada nao se aplica`,
-      );
+  const entradaFallback = POLICY.licenseFallbacks[c.id];
+  if (entradaFallback) {
+    const selecao = selecionarRegistroDoArtefato(entradaFallback, c);
+    if (!selecao.ok) {
+      semTexto.push(descreverFalhaDeSelecao(selecao, c));
       continue;
     }
+    const fallback = selecao.registro;
     const textos = fallback.fragments
-      .map((f) => ({
-        arquivo: POLICY.fragments[f].path,
-        texto: (fragmentos.get(f) || "").trim(),
-      }))
+      .map((f) => {
+        const observado = fragmentos.get(f);
+        return {
+          arquivo: POLICY.fragments[f].path,
+          texto: (observado?.texto || "").trim(),
+          caminho: resolve(RAIZ, POLICY.fragments[f].path),
+          portador: true,
+          sha256: observado?.sha256 || "",
+        };
+      })
       .filter((t) => t.texto);
     // Fallback sem fragmento, ou apontando para arquivo so com espacos, nao
     // produz aviso nenhum: seguiria adiante emitindo cabecalho sem licenca.
@@ -694,14 +763,36 @@ function corroborarLicencaUnica(componentesDaLista) {
     // Quem passou pela eleicao ja foi corroborado la.
     if (c.eleicao) continue;
     const declarada = (c.licencaDeclarada || "").trim();
-    if (!declarada) continue;
-
-    const inspecionada = POLICY.unverifiableLicenseDeclarations?.[c.id];
-    if (inspecionada) {
-      if (inspecionada.declared !== declarada) {
-        pendentes.push(
-          `${c.id}: a politica registra a declaracao "${inspecionada.declared}" mas o pacote declara "${declarada}"`,
+    const entradaInspecionada =
+      POLICY.unverifiableLicenseDeclarations?.[c.id];
+    if (!declarada || entradaInspecionada) {
+      let inspecionada;
+      if (entradaInspecionada) {
+        const selecao = selecionarRegistroDoArtefato(
+          entradaInspecionada,
+          c,
         );
+        if (!selecao.ok) {
+          pendentes.push(descreverFalhaDeSelecao(selecao, c));
+          continue;
+        }
+        inspecionada = selecao.registro;
+      }
+      const problemas = validarInspecaoManual(c, inspecionada);
+      if (!problemas.length) {
+        const corr = corroboradas(
+          [inspecionada.identifiedLicense.trim()],
+          c,
+        );
+        if (!corr.ok) {
+          problemas.push(
+            `${c.id}: a licenca identificada por inspecao nao se sustenta — ${corr.motivo}`,
+          );
+        }
+      }
+      pendentes.push(...problemas);
+      if (!problemas.length) {
+        c.inspecaoManual = inspecionada;
       }
       continue;
     }
@@ -713,15 +804,10 @@ function corroborarLicencaUnica(componentesDaLista) {
     const folhas = folhasDaExpressao(ast);
     if (folhas.length !== 1) continue;
 
-    // Sem marcador declarado nao se afirma nem se nega nada — e por isso o
-    // componente para o gate, em vez de passar por omissao. Ou alguem declara
-    // o marcador, ou registra a inspecao manual acima.
-    const corr = corroboradas(folhas, c.textos || []);
+    const corr = corroboradas(folhas, c);
     if (!corr.ok) {
       pendentes.push(
-        corr.motivo.startsWith("sem marcador")
-          ? `${c.id}: declara ${declarada}, para a qual a politica nao tem marcador; declare um em licenseTextMarkers ou registre a inspecao manual em unverifiableLicenseDeclarations`
-          : `${c.id}: declara ${declarada} mas ${corr.motivo}`,
+        `${c.id}: declara ${declarada} mas ${corr.motivo}`,
       );
     }
   }
@@ -816,6 +902,20 @@ for (const c of lista) {
   }
   linhas.push(`Escopo: ${c.escopo}`);
   if (c.licencaDeclarada) linhas.push(`Licenca declarada: ${c.licencaDeclarada}`);
+  const adicionais = (c.revisaoDoTexto?.licenses || []).filter(
+    (licenca) => licenca !== c.licencaDeclarada,
+  );
+  if (adicionais.length) {
+    linhas.push(
+      `Licencas adicionais preservadas no arquivo agregado: ${adicionais.join(", ")}`,
+    );
+  }
+  if (c.inspecaoManual) {
+    linhas.push(
+      `Licenca identificada por inspecao: ${c.inspecaoManual.identifiedLicense}`,
+    );
+    linhas.push(`Motivo da inspecao: ${c.inspecaoManual.rationale}`);
+  }
   if (c.eleicao) {
     linhas.push(
       `Licenca eleita: ${c.eleicao.licenca} (${c.eleicao.origem})`,

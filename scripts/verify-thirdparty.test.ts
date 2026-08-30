@@ -2,7 +2,6 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import spdxParse from 'spdx-expression-parse';
 import { afterEach, describe, expect, it } from 'vitest';
 
 // Threads do PR #235: (a) uma linha duplicada na tabela sobrescrevia a
@@ -51,6 +50,18 @@ afterEach(() => {
 });
 
 describe('verify-thirdparty', () => {
+  it(
+    'valida o inventário real inclusive o contrato oficial do Bundler',
+    () => {
+      const result = spawnSync(process.execPath, [SCRIPT], {
+        cwd: resolve(__dirname, '..'),
+        encoding: 'utf8',
+      });
+      expect(result.status, result.stderr).toBe(0);
+    },
+    15_000,
+  );
+
   it('aceita uma tabela fiel ao manifesto e ao lockfile', () => {
     const result = runFixture({
       tableRows: ['| pacote-a | 1.0.0 | MIT |'],
@@ -113,54 +124,54 @@ describe('verify-thirdparty', () => {
 // implementação de referência do SPDX, e a asserção abaixo usa o mesmo
 // predicado do gerador.
 describe('política de eleição de licença', () => {
-  it('declara ordem de preferência e nenhuma licença cujo texto é subconjunto de outra', async () => {
+  it('declara uma ordem de preferência sem identificadores duplicados', async () => {
     const { POLICY } = await import('./legal/thirdparty-policy.mjs');
     expect(POLICY.licenseElectionPreference.length).toBeGreaterThan(0);
-    // BSD-2-Clause é o BSD-3-Clause sem a cláusula de não-endosso, e MIT-0 e
-    // 0BSD são MIT e ISC sem a condição de atribuição: todo trecho que
-    // identifica o menor aparece também no maior, então corroborar por busca de
-    // trecho não os distingue. Só entram por eleição explícita.
-    for (const subconjunto of ['MIT-0', '0BSD', 'BSD-2-Clause']) {
-      expect(POLICY.licenseElectionPreference).not.toContain(subconjunto);
+    expect(new Set(POLICY.licenseElectionPreference).size).toBe(
+      POLICY.licenseElectionPreference.length,
+    );
+  });
+
+  it('valida a identidade e o conteúdo de toda eleição explícita registrada', async () => {
+    const { POLICY } = await import('./legal/thirdparty-policy.mjs');
+    for (const [id, entrada] of Object.entries(POLICY.licenseElections)) {
+      expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
+      const eleicoes = Array.isArray(entrada) ? entrada : [entrada];
+      expect(eleicoes.length).toBeGreaterThan(0);
+      for (const eleicao of eleicoes) {
+        expect(eleicao.ecosystem).toBe('npm');
+        expect(eleicao.source).toBeTruthy();
+        expect(Object.hasOwn(eleicao, 'integrity')).toBe(true);
+        expect(
+          eleicao.integrity === null ||
+            (typeof eleicao.integrity === 'string' && eleicao.integrity.length > 0),
+        ).toBe(true);
+        expect(eleicao.expression).toBeTruthy();
+        expect(eleicao.elected).toBeTruthy();
+        expect(eleicao.rationale).toBeTruthy();
+      }
     }
   });
 
-  it('exige que toda eleição explícita satisfaça a expressão que resolve', async () => {
+  it('prende toda exceção do Licensee à identidade e aos hashes exatos', async () => {
     const { POLICY } = await import('./legal/thirdparty-policy.mjs');
-    const barraLegada = (e: string) =>
-      e.includes('/')
-        ? e
-            .split('/')
-            .map((t) => t.trim())
-            .join(' OR ')
-        : e;
-    type No = {
-      license?: string;
-      exception?: string;
-      conjunction?: string;
-      left?: No;
-      right?: No;
-    };
-    const folha = (n: No) => (n.exception ? `${n.license} WITH ${n.exception}` : n.license);
-    const folhas = (n: No): string[] =>
-      n.license ? [folha(n) as string] : [...folhas(n.left as No), ...folhas(n.right as No)];
-    const satisfaz = (n: No, escolhidas: Set<string>): boolean =>
-      n.license
-        ? escolhidas.has(folha(n) as string)
-        : n.conjunction === 'and'
-          ? satisfaz(n.left as No, escolhidas) && satisfaz(n.right as No, escolhidas)
-          : satisfaz(n.left as No, escolhidas) || satisfaz(n.right as No, escolhidas);
-
-    for (const [id, eleicao] of Object.entries(POLICY.licenseElections)) {
+    for (const [id, entrada] of Object.entries(
+      POLICY.licenseTextReviewOverrides,
+    )) {
       expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
-      expect(eleicao.expression).toBeTruthy();
-      expect(eleicao.elected).toBeTruthy();
-      expect(eleicao.rationale).toBeTruthy();
-      // Satisfazer a expressão subsume as duas conferências anteriores: a
-      // eleita é oferecida, e nenhum termo obrigatório fica de fora.
-      const ast = spdxParse(barraLegada(eleicao.expression));
-      const eleitas = new Set(folhas(spdxParse(barraLegada(eleicao.elected))));
-      expect(satisfaz(ast, eleitas)).toBe(true);
+      const registros = Array.isArray(entrada) ? entrada : [entrada];
+      expect(registros.length).toBeGreaterThan(0);
+      for (const registro of registros) {
+        expect(registro.ecosystem).toBe('npm');
+        expect(registro.source).toBeTruthy();
+        expect(Object.hasOwn(registro, 'integrity')).toBe(true);
+        expect(registro.licenses.length).toBeGreaterThan(0);
+        expect(registro.rationale).toBeTruthy();
+        expect(Object.keys(registro.files).length).toBeGreaterThan(0);
+        for (const hash of Object.values(registro.files)) {
+          expect(hash).toMatch(/^[a-f0-9]{64}$/u);
+        }
+      }
     }
   });
 
@@ -173,13 +184,23 @@ describe('política de eleição de licença', () => {
     expect(vendorizados.length).toBeGreaterThan(0);
     for (const [id, entrada] of vendorizados) {
       expect(id).toMatch(/^.+@\d+\.\d+\.\d+/u);
-      expect(entrada.rationale).toBeTruthy();
-      expect(entrada.sourceRepository).toBeTruthy();
-      // Nome de branch ou tag não é proveniência: os dois se movem. Só commit
-      // completo prova de que bytes de upstream o texto local saiu.
-      expect(entrada.revision ?? '').toMatch(/^[0-9a-f]{40}$/u);
-      for (const chave of entrada.fragments) {
-        expect(POLICY.fragments[chave]).toBeTruthy();
+      const registros = Array.isArray(entrada) ? entrada : [entrada];
+      for (const registro of registros) {
+        expect(registro.ecosystem).toBe('npm');
+        expect(registro.source).toBeTruthy();
+        expect(Object.hasOwn(registro, 'integrity')).toBe(true);
+        expect(
+          registro.integrity === null ||
+            (typeof registro.integrity === 'string' && registro.integrity.length > 0),
+        ).toBe(true);
+        expect(registro.rationale).toBeTruthy();
+        expect(registro.sourceRepository).toBeTruthy();
+        // Nome de branch ou tag não é proveniência: os dois se movem. Só commit
+        // completo prova de que bytes de upstream o texto local saiu.
+        expect(registro.revision ?? '').toMatch(/^[0-9a-f]{40}$/u);
+        for (const chave of registro.fragments) {
+          expect(POLICY.fragments[chave]).toBeTruthy();
+        }
       }
     }
   });

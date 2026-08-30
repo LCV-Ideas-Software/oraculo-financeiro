@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const CHECKOUT_SHA = "3d3c42e5aac5ba805825da76410c181273ba90b1";
 const LINEAR_ACTION_SHA = "3f31fcf14c110cc53579fcc3575a26d469c413b4";
 const WRANGLER_ACTION_SHA = "ebbaa1584979971c8614a24965b4405ff95890e0";
+const WRANGLER_ACTION_REF = "v4.0.0";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -209,7 +210,17 @@ test("both Cloudflare deploys remain on the official Wrangler action", () => {
   assert.equal(installedWrangler.version, lockedWrangler.version);
   assert.equal(lockedWrangler.dev, true);
   assert.match(lockedWrangler.integrity, /^sha512-/u);
-  assert.equal(occurrences(actionsLock, officialUse), 2);
+  const lockedUse = `cloudflare/wrangler-action@${WRANGLER_ACTION_REF}`;
+  assert.equal(occurrences(actionsLock, lockedUse), 2);
+  assert.match(
+    actionsLock,
+    new RegExp(
+      `'cloudflare/wrangler-action@${WRANGLER_ACTION_REF.replaceAll(".", "\\.")}':` +
+        `[\\s\\S]*?ref: '${WRANGLER_ACTION_REF.replaceAll(".", "\\.")}'` +
+        `[\\s\\S]*?commit: 'sha1-${WRANGLER_ACTION_SHA}'`,
+      "u",
+    ),
+  );
 });
 
 test("the local Wrangler installation cannot come from a different job", () => {

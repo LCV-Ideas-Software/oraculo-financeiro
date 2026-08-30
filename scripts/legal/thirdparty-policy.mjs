@@ -15,6 +15,14 @@ export const POLICY = Object.freeze({
     sourceRepository: "https://github.com/LCV-Ideas-Software/oraculo-financeiro",
   }),
 
+  // O verificador cruza este contrato com Gemfile, Gemfile.lock e o inventario.
+  // Um bump nativo do Dependabot nao pode trocar o detector sem obrigar a
+  // revalidacao das excecoes de texto abaixo.
+  licenseTextMatcher: Object.freeze({
+    gem: "licensee",
+    version: "10.1.0",
+  }),
+
   // Universo coberto: o que e servido ao navegador. Dependencia de
   // desenvolvimento nao chega ao usuario e nao gera obrigacao de aviso; a
   // marcacao `dev` do proprio npm e a fonte, nao uma heuristica nossa.
@@ -117,14 +125,9 @@ export const POLICY = Object.freeze({
   // entrada em `licenseElections`, senao o gate reprova. Nao ha aqui um parser
   // de SPDX escrito a mao: formas nao triviais nao sao interpretadas, sao
   // recusadas.
-  // So entram aqui identificadores cujo texto e distinguivel dos demais por um
-  // marcador proprio. MIT-0 e 0BSD ficaram DE FORA de proposito: diferem de MIT
-  // e de ISC por uma clausula que o outro tem e eles nao, e ausencia nao se
-  // detecta com busca de trecho. Expressao que so ofereca esses exige eleicao
-  // explicita. BSD-2-Clause ficou de fora pelo mesmo motivo: o BSD-3-Clause e o
-  // texto do BSD-2 mais a clausula de nao-endosso, entao todo marcador do BSD-2
-  // aparece tambem no BSD-3, e um pacote que oferecesse os dois e empacotasse
-  // so o BSD-3 corroboraria BSD-2 falsamente.
+  // A preferencia so escolhe uma alternativa que satisfaca a expressao. O texto
+  // dessa alternativa ainda precisa ser reconhecido exatamente pelo Licensee,
+  // ou estar preso a uma revisao imutavel por artefato e sha256 abaixo.
   licenseElectionPreference: Object.freeze([
     "MIT",
     "ISC",
@@ -134,63 +137,152 @@ export const POLICY = Object.freeze({
     "Zlib",
   ]),
 
-  // Corroboracao da eleicao pelo texto efetivamente reproduzido.
-  //
-  // Eleger uma licenca cujo texto nao acompanha o artefato produz uma afirmacao
-  // falsa. Cada identificador elegivel declara aqui um trecho caracteristico do
-  // CORPO da sua propria licenca, e a eleicao so vale se ao menos um deles
-  // aparecer no que foi reproduzido.
-  //
-  // Os trechos precisam existir so no corpo. Frases como "Apache License"
-  // aparecem tambem em arquivos que apenas APONTAM para a licenca sem
-  // reproduzi-la, e aceitar isso faria o gate corroborar um ponteiro.
-  //
-  // Isto nao e deteccao de licenca: e uma tabela declarada e auditavel. Um
-  // identificador sem marcador nao pode ser eleito, e o gate diz isso em vez de
-  // aceitar em silencio.
-  licenseTextMarkers: Object.freeze({
-    // A clausula de atribuicao e o que separa MIT de MIT-0, e ISC de 0BSD: as
-    // primeiras exigem que o aviso acompanhe as copias, as segundas nao. Usar
-    // a frase de abertura, comum as duas, faria uma corroborar a outra.
-    MIT: Object.freeze([
-      "The above copyright notice and this permission notice shall be included",
-    ]),
-    "Apache-2.0": Object.freeze([
-      "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION",
-    ]),
-    "BSD-2-Clause": Object.freeze([
-      "Redistributions of source code must retain the above copyright notice",
-    ]),
-    // A clausula de nao-endosso e o que separa BSD-3-Clause de BSD-2-Clause.
-    // Nao se ancora no comeco dela: os pacotes substituem ali o nome do titular
-    // e pluralizam ("Neither the names of the Mozilla Foundation nor..."), o
-    // que fazia o BSD-3 legitimo do source-map-js passar por ausente. O trecho
-    // abaixo e literal no texto canonico e nas variantes, e nao existe no
-    // BSD-2-Clause, que nao tem clausula de nao-endosso nenhuma.
-    "BSD-3-Clause": Object.freeze([
-      "may be used to endorse or promote products derived from this software without specific prior written permission",
-    ]),
-    ISC: Object.freeze([
-      "provided that the above copyright notice and this permission notice appear in all copies",
-    ]),
-    "CC0-1.0": Object.freeze(["CC0 1.0 Universal", "Creative Commons Legal Code"]),
-    Unlicense: Object.freeze([
-      "This is free and unencumbered software released into the public domain",
-    ]),
-    Zlib: Object.freeze([
-      "altered source versions must be plainly marked",
-    ]),
-    "MPL-2.0": Object.freeze(["Mozilla Public License"]),
-    "BSL-1.0": Object.freeze(["Boost Software License"]),
+  // Variantes integrais que o detector oficial do GitHub nao classifica com o
+  // matcher Exact. Cada excecao e selecionada pela identidade completa do
+  // artefato e fixa o conjunto e sha256 dos arquivos revisados. Similaridade,
+  // titulo, URL ou marcador isolado nunca satisfazem o gate.
+  licenseTextReviewOverrides: Object.freeze({
+    "domelementtype@3.0.0": Object.freeze({
+      ecosystem: "npm",
+      source:
+        "https://registry.npmjs.org/domelementtype/-/domelementtype-3.0.0.tgz",
+      integrity:
+        "sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==",
+      licenses: Object.freeze(["BSD-2-Clause"]),
+      files: Object.freeze({
+        LICENSE:
+          "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/BSD-2-Clause.html",
+      ]),
+      rationale:
+        "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "domhandler@6.0.1": Object.freeze({
+      ecosystem: "npm",
+      source: "https://registry.npmjs.org/domhandler/-/domhandler-6.0.1.tgz",
+      integrity:
+        "sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==",
+      licenses: Object.freeze(["BSD-2-Clause"]),
+      files: Object.freeze({
+        LICENSE:
+          "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/BSD-2-Clause.html",
+      ]),
+      rationale:
+        "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "domutils@4.0.2": Object.freeze({
+      ecosystem: "npm",
+      source: "https://registry.npmjs.org/domutils/-/domutils-4.0.2.tgz",
+      integrity:
+        "sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA==",
+      licenses: Object.freeze(["BSD-2-Clause"]),
+      files: Object.freeze({
+        LICENSE:
+          "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/BSD-2-Clause.html",
+      ]),
+      rationale:
+        "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "entities@8.0.0": Object.freeze({
+      ecosystem: "npm",
+      source: "https://registry.npmjs.org/entities/-/entities-8.0.0.tgz",
+      integrity:
+        "sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==",
+      licenses: Object.freeze(["BSD-2-Clause"]),
+      files: Object.freeze({
+        LICENSE:
+          "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/BSD-2-Clause.html",
+      ]),
+      rationale:
+        "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "lucide-react@1.33.0": Object.freeze({
+      ecosystem: "npm",
+      source:
+        "https://registry.npmjs.org/lucide-react/-/lucide-react-1.33.0.tgz",
+      integrity:
+        "sha512-MTRwMy0ZlL8Ur/vOAiJ9XGHE+kFPC7brq6MxAm0GiGXEBj0qy0jA/pG4N675oSzciO/UCdX8T+5yUQdmDeTLxg==",
+      licenses: Object.freeze(["ISC", "MIT"]),
+      files: Object.freeze({
+        LICENSE:
+          "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/ISC.html",
+        "https://spdx.org/licenses/MIT.html",
+      ]),
+      rationale:
+        "O arquivo integral agrega a ISC declarada pelo pacote e a MIT dos icones derivados do Feather, portanto nao e correspondencia exata de uma unica licenca para o Licensee. As duas secoes foram conferidas contra as referencias oficiais SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "source-map-js@1.2.1": Object.freeze({
+      ecosystem: "npm",
+      source:
+        "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
+      integrity:
+        "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==",
+      licenses: Object.freeze(["BSD-3-Clause"]),
+      files: Object.freeze({
+        LICENSE:
+          "6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/BSD-3-Clause.html",
+      ]),
+      rationale:
+        "O Licensee devolve NOASSERTION para a variante integral com atribuicao Mozilla e marcadores de lista. As tres condicoes e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
+    "vite@8.2.2": Object.freeze({
+      ecosystem: "npm",
+      source: "https://registry.npmjs.org/vite/-/vite-8.2.2.tgz",
+      integrity:
+        "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==",
+      licenses: Object.freeze([
+        "MIT",
+        "Apache-2.0",
+        "BSD-2-Clause",
+        "CC0-1.0",
+        "ISC",
+      ]),
+      files: Object.freeze({
+        "LICENSE.md":
+          "387dd7baa307083401a27c58c362c30832f5ba1dba84f10cc22c33401523f45c",
+      }),
+      referenceUrls: Object.freeze([
+        "https://spdx.org/licenses/MIT.html",
+      ]),
+      rationale:
+        "O arquivo integral agrega a MIT do Vite e os avisos completos das dependencias incorporadas, portanto nao e correspondencia exata de uma unica licenca para o Licensee. A secao do Vite foi conferida contra a referencia oficial SPDX e o agregado foi preservado integralmente em 30/08/2026; qualquer mudanca de bytes reprova.",
+    }),
   }),
 
   // Eleicoes explicitas, por `<nome>@<versao>`. Necessarias para toda
   // expressao que nao seja uma das duas formas triviais.
   //
-  // `expression` e conferida contra o que o pacote declara: entrada obsoleta ou
-  // com erro de digitacao reprova em vez de aplicar uma escolha que o pacote
-  // nunca ofereceu.
+  // Cada registro inclui `ecosystem`, `source` e `integrity` exata, ou `null`
+  // quando o lockfile nao a fornece. O valor pode ser objeto unico ou lista;
+  // first-wins e proibido. `expression` e conferida contra o pacote atual.
   licenseElections: Object.freeze({}),
+
+  // Excecoes de metadado nao-SPDX ou ausente, por `<nome>@<versao>`. Cada uma
+  // exige inspecao manual versionada. Para metadado ausente, use
+  // `declared: null`; para texto nao analisavel, copie o valor literal. A
+  // entrada tambem precisa registrar `identifiedLicense` (um termo SPDX
+  // concreto), `rationale`, `ecosystem`, `source` exatamente como o `resolved`
+  // do lockfile e `integrity` exata (ou `null`). O valor pode ser uma lista para
+  // representar origens homonimas sem first-wins. A excecao nao substitui uma
+  // declaracao SPDX valida.
+  unverifiableLicenseDeclarations: Object.freeze({}),
 
   // Texto vendorizado. O sha256 e do arquivo inteiro, cabecalho de proveniencia
   // incluido, e e conferido em tempo de execucao: editar o fragmento sem
@@ -208,6 +300,10 @@ export const POLICY = Object.freeze({
   licenseFallbacks: Object.freeze({
     "launder@1.7.1": Object.freeze({
       ecosystem: "npm",
+      source:
+        "https://registry.npmjs.org/launder/-/launder-1.7.1.tgz",
+      integrity:
+        "sha512-mU6WRz5EusL9ZZuiZ5SO4Y6C0P9PAUR9iwdb6bzj4KDihm28DiHFw+/yk9DBH4f+Pv1wuzQ4e2jV3oQ7mkIqvw==",
       license: "MIT",
       fragments: Object.freeze(["launderMit"]),
       sourceRepository: "https://github.com/apostrophecms/apostrophe",

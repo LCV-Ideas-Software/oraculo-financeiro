@@ -315,6 +315,7 @@ SOFTWARE.
 lucide-react 1.33.0
 Escopo: navegador
 Licenca declarada: ISC
+Licencas adicionais preservadas no arquivo agregado: MIT
 
 --- LICENSE ---
 
@@ -621,6 +622,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 vite 8.2.2
 Escopo: navegador
 Licenca declarada: MIT
+Licencas adicionais preservadas no arquivo agregado: Apache-2.0, BSD-2-Clause, CC0-1.0, ISC
 
 --- LICENSE.md ---
 

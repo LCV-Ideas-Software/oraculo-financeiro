@@ -15,12 +15,15 @@
 | eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
 | globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals |
 | happy-dom | ^20.11.6 | MIT | Não | https://registry.npmjs.org/happy-dom |
+| licensee | 10.1.0 | MIT | Não | https://rubygems.org/gems/licensee/versions/10.1.0 |
 | lucide-react | ^1.31.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
+| npm-install-checks | 8.0.0 | BSD-2-Clause | Não | https://registry.npmjs.org/npm-install-checks |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | spdx-expression-parse | ^5.0.0 | MIT | Não | https://registry.npmjs.org/spdx-expression-parse |
+| ssri | 14.0.0 | ISC | Não | https://registry.npmjs.org/ssri |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
@@ -48,6 +51,9 @@ ao lado do componente em `THIRD-PARTY-NOTICES.txt`.
 
 O inventário acima nomeia as licenças. O **texto integral** de cada componente
 incorporado ao que o projeto publica — no bundle do navegador ou nas Pages
-Functions do servidor, com o escopo de cada um — está em `THIRD-PARTY-NOTICES.txt`, gerado por
-`npm run notices` e conferido por `npm run notices:check` nos workflows de
-`pull_request` e de deploy.
+Functions do servidor, com o escopo de cada um — está em
+`THIRD-PARTY-NOTICES.txt`, gerado por `npm run notices` e conferido por
+`npm run notices:check` nos workflows de `pull_request` e de deploy. A prova
+padrão usa a versão do Licensee fixada no `Gemfile.lock`, detector oficial do
+GitHub, com matcher `Exact` e confiança 100. Variante integral não reconhecida exatamente só passa por
+revisão explícita presa à origem, integridade, conjunto de arquivos e SHA-256.

@@ -39,6 +39,12 @@ jobs:
           check-latest: true
           cache: npm
 
+      - name: Set up Ruby 3.4 for GitHub Licensee
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "3.4.10"
+          bundler-cache: true
+
       - name: Verify npm registry
         shell: bash
         run: test "$(npm config get registry)" = "https://registry.npmjs.org/"
@@ -57,7 +63,6 @@ jobs:
           # idênticas e fiéis ao package.json/lockfile — o mesmo gate roda no
           # deploy, mas aqui ele rejeita o drift em pull_request/merge_group.
           node scripts/verify-thirdparty.mjs
-          # Gate dos avisos (ORAFINC-15) ANTES do merge: o texto integral de
-          # licença de cada componente servido ao navegador precisa continuar
-          # fiel às dependências instaladas, nas duas cópias publicadas.
+          # Gate dos avisos (ORAFINC-15) ANTES do merge: o Licensee oficial do
+          # GitHub comprova o texto integral e as duas cópias publicadas.
           node scripts/generate-notices.mjs --check
