@@ -37,17 +37,52 @@ export const POLICY = Object.freeze({
   // Casar por nome exato nao funciona: os publicadores usam formas muito
   // diferentes para o mesmo arquivo. O criterio e o prefixo, sem diferenciar
   // maiusculas, aceitando qualquer sufixo e extensao.
+  //
+  // Arquivos que CARREGAM o texto da licenca. Pelo menos um deles, ou um
+  // fallback declarado, e obrigatorio para cada componente distribuido.
   licenseFilePrefixes: Object.freeze([
     "license",
     "licence",
     "copying",
-    "notice",
     "unlicense",
   ]),
+
+  // Arquivos SUPLEMENTARES. Sao incluidos nos avisos quando existem, mas nunca
+  // satisfazem sozinhos a exigencia acima: um NOTICE da Apache-2.0 e material
+  // adicional exigido pela clausula 4(d), nao o texto da licenca. Aceitar um
+  // NOTICE isolado como suficiente deixaria passar um componente sem licenca.
+  supplementalFilePrefixes: Object.freeze(["notice"]),
 
   // Extensoes que nao carregam o texto da licenca e portanto nao contam como
   // aviso, mesmo quando o nome comeca com um dos prefixos acima.
   licenseFileIgnoredExtensions: Object.freeze([".spdx", ".json", ".xml"]),
+
+  // Eleicao de licenca em expressoes de escolha.
+  //
+  // Quando um componente oferece mais de uma licenca, e preciso dizer qual foi
+  // eleita: e isso que determina as obrigacoes assumidas. A ordem abaixo e a
+  // preferencia declarada do projeto, aplicada do primeiro termo que casar.
+  //
+  // A eleicao automatica so vale para as duas formas triviais e inequivocas:
+  // uma disjuncao plana (`A OR B OR C`) e a forma legada do Cargo (`A/B`).
+  // Qualquer outra expressao — com parenteses, com AND, com WITH — precisa de
+  // entrada em `licenseElections`, senao o gate reprova. Nao ha aqui um parser
+  // de SPDX escrito a mao: formas nao triviais nao sao interpretadas, sao
+  // recusadas.
+  licenseElectionPreference: Object.freeze([
+    "MIT",
+    "ISC",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Apache-2.0",
+    "0BSD",
+    "Unlicense",
+    "Zlib",
+  ]),
+
+  // Eleicoes explicitas, por `<nome>@<versao>`. Necessarias para toda
+  // expressao que nao seja uma das duas formas triviais.
+  licenseElections: Object.freeze({}),
 
   // Texto vendorizado. O sha256 e do arquivo inteiro, cabecalho de proveniencia
   // incluido, e e conferido em tempo de execucao: editar o fragmento sem

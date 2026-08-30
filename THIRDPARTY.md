@@ -35,8 +35,13 @@ distribuída.
 
 Varredura do `package-lock.json` em 30/08/2026, excluindo as entradas que o npm
 marca como `dev`: **nenhuma** dependência distribuída declara expressão OR.
-Caso alguma passe a declarar, a eleição precisa ser registrada aqui antes do
-merge.
+
+Essa afirmação não depende da data: o gate `npm run notices:check` reprova
+quando qualquer componente distribuído passa a oferecer escolha de licença sem
+eleição registrada. A política declara uma ordem de preferência aplicada às
+formas inequívocas — uma disjunção plana e a forma legada do Cargo — e recusa
+qualquer outra expressão, exigindo entrada explícita. A licença eleita aparece
+ao lado do componente em `THIRD-PARTY-NOTICES.txt`.
 
 ## Avisos de terceiros
 
