@@ -22,6 +22,37 @@ export const POLICY = Object.freeze({
     npm: Object.freeze({
       lock: "package-lock.json",
       excludeDevMarker: "dev",
+
+      // Ferramentas de build que INJETAM codigo proprio no artefato servido.
+      // A marcacao `dev` do lockfile diz de onde a dependencia foi alcancada,
+      // nao se ela contribui codigo para o bundle — e o bundler contribui.
+      //
+      // Verificado no `dist/assets/*.js` construido em 30/08/2026: o polyfill
+      // de modulepreload do Vite esta la, como IIFE que testa
+      // `relList.supports("modulepreload")`, varre `link[rel="modulepreload"]`
+      // e instala um MutationObserver. Isso e codigo de autoria do Vite sendo
+      // distribuido, e ficava fora dos avisos enquanto o arquivo afirmava
+      // cobrir tudo que e servido.
+      //
+      // Cada entrada aqui e incluida apesar da marcacao `dev`, com a razao
+      // registrada. A lista e explicita de proposito: adivinhar qual ferramenta
+      // injeta runtime seria pior do que declarar.
+      runtimeInjectingBuildTools: Object.freeze({
+        vite: Object.freeze({
+          reason:
+            "Injeta o polyfill de modulepreload no ponto de entrada do navegador. `build.modulePreload.polyfill` esta no padrao documentado, que e ativo.",
+          evidence:
+            "IIFE presente em dist/assets/index-*.js, verificada em 30/08/2026.",
+        }),
+      }),
+
+      // Plataforma de referencia para os campos `os`, `cpu` e `libc` do npm.
+      // O artefato aqui e um bundle de navegador, construido no runner Linux
+      // do deploy: pacote nativo restrito a outra plataforma nao e instalado e
+      // nao entra no bundle.
+      targetOs: "linux",
+      targetCpu: "x64",
+      targetLibc: "glibc",
     }),
   }),
 
@@ -69,13 +100,17 @@ export const POLICY = Object.freeze({
   // entrada em `licenseElections`, senao o gate reprova. Nao ha aqui um parser
   // de SPDX escrito a mao: formas nao triviais nao sao interpretadas, sao
   // recusadas.
+  // So entram aqui identificadores cujo texto e distinguivel dos demais por um
+  // marcador proprio. MIT-0 e 0BSD ficaram DE FORA de proposito: diferem de MIT
+  // e de ISC por uma clausula que o outro tem e eles nao, e ausencia nao se
+  // detecta com busca de trecho. Expressao que so ofereca esses exige eleicao
+  // explicita.
   licenseElectionPreference: Object.freeze([
     "MIT",
     "ISC",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "Apache-2.0",
-    "0BSD",
     "Unlicense",
     "Zlib",
   ]),
@@ -95,8 +130,12 @@ export const POLICY = Object.freeze({
   // identificador sem marcador nao pode ser eleito, e o gate diz isso em vez de
   // aceitar em silencio.
   licenseTextMarkers: Object.freeze({
-    MIT: Object.freeze(["Permission is hereby granted, free of charge"]),
-    "MIT-0": Object.freeze(["Permission is hereby granted, free of charge"]),
+    // A clausula de atribuicao e o que separa MIT de MIT-0, e ISC de 0BSD: as
+    // primeiras exigem que o aviso acompanhe as copias, as segundas nao. Usar
+    // a frase de abertura, comum as duas, faria uma corroborar a outra.
+    MIT: Object.freeze([
+      "The above copyright notice and this permission notice shall be included",
+    ]),
     "Apache-2.0": Object.freeze([
       "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION",
     ]),
@@ -105,10 +144,7 @@ export const POLICY = Object.freeze({
     ]),
     "BSD-3-Clause": Object.freeze(["Neither the name of"]),
     ISC: Object.freeze([
-      "Permission to use, copy, modify, and/or distribute this software",
-    ]),
-    "0BSD": Object.freeze([
-      "Permission to use, copy, modify, and/or distribute this software",
+      "provided that the above copyright notice and this permission notice appear in all copies",
     ]),
     "CC0-1.0": Object.freeze(["CC0 1.0 Universal", "Creative Commons Legal Code"]),
     Unlicense: Object.freeze([

@@ -178,15 +178,24 @@ let plataformaExcluidos = [];
 // npm documenta `os` e `cpu` como restricoes de plataforma. Um pacote opcional
 // restrito a outra plataforma nao e instalado e nao pode estar no artefato, e
 // exigi-lo faria o gate reprovar por uma ausencia legitima.
+// A referencia e a plataforma do ARTEFATO declarada na politica, nao a da
+// maquina que executa: filtrar pelo host faria o conjunto de avisos mudar
+// conforme onde o comando roda. `libc` entra junto, como o npm documenta.
 function plataformaExcluida(meta) {
   const casa = (lista, atual) => {
     if (!Array.isArray(lista) || !lista.length) return true;
+    if (atual === null || atual === undefined) return true;
     const negados = lista.filter((v) => v.startsWith("!")).map((v) => v.slice(1));
     const permitidos = lista.filter((v) => !v.startsWith("!"));
     if (negados.includes(atual)) return false;
     return permitidos.length === 0 || permitidos.includes(atual);
   };
-  return !casa(meta.os, process.platform) || !casa(meta.cpu, process.arch);
+  const alvo = POLICY.scope.npm;
+  return (
+    !casa(meta.os, alvo.targetOs) ||
+    !casa(meta.cpu, alvo.targetCpu) ||
+    !casa(meta.libc, alvo.targetLibc)
+  );
 }
 
 function componentes() {
@@ -219,7 +228,14 @@ function componentes() {
   const excluidosPorPlataforma = [];
   for (const [chave, metaOriginal] of Object.entries(lock.packages)) {
     if (!chave.startsWith("node_modules/")) continue;
-    if (metaOriginal[marcador] === true) continue;
+    // A marcacao `dev` diz de onde a dependencia foi alcancada, nao se ela
+    // contribui codigo ao artefato. Ferramentas de build que injetam runtime
+    // sao declaradas na politica e entram apesar dela.
+    const nomeDaEntrada = nomeDaChaveDoLock(chave);
+    const injetaRuntime = Boolean(
+      POLICY.scope.npm.runtimeInjectingBuildTools?.[nomeDaEntrada],
+    );
+    if (metaOriginal[marcador] === true && !injetaRuntime) continue;
 
     // Um link de workspace nao recebe a marcacao `dev` mesmo quando a raiz so o
     // declara em devDependencies, e o alvo resolvido tampouco recupera essa
@@ -266,6 +282,12 @@ function componentes() {
       versao,
       id,
       licencaDeclarada: meta.license || null,
+      // De onde o pacote veio de fato. Um fallback so pode valer para o
+      // artefato do registro canonico: trocar a dependencia por um git, um
+      // `file:` ou outro registro mantendo nome e versao nao pode herdar a
+      // proveniencia travada de outro pacote.
+      origemPacote: meta.resolved || null,
+      injetaRuntime,
       diretorio: acharDiretorio(chave, nome, versao),
     });
   }
@@ -329,19 +351,33 @@ function termosDeEscolha(expressao) {
   return null;
 }
 
-function ofereceEscolha(expressao) {
+// Toda expressao composta precisa passar pela validacao, nao so as de escolha.
+// `MIT AND Zlib` nao oferece opcao, mas exige que MAIS DE UM texto acompanhe o
+// artefato, e um unico LICENSE legivel nao prova isso. Formas assim caem em
+// `termosDeEscolha` como nao triviais e passam a exigir entrada explicita.
+function precisaDeValidacao(expressao) {
   if (!expressao) return false;
   // Uma URL nao oferece escolha nenhuma: a barra ali e caminho, nao disjuncao.
   // Sem esta guarda, `https://opensource.org/licenses/MIT` seria dividido e
   // renderia a afirmacao falsa de que MIT foi eleita entre alternativas.
   if (pareceUrl(expressao)) return false;
-  return /\bOR\b/u.test(expressao) || expressao.includes("/");
+  return (
+    /\bOR\b/u.test(expressao) ||
+    /\bAND\b/u.test(expressao) ||
+    /\bWITH\b/u.test(expressao) ||
+    expressao.includes("/")
+  );
 }
 
 // A licenca eleita precisa estar efetivamente reproduzida no artefato. Sem
 // isso, o arquivo pode afirmar Apache-2.0 enquanto reproduz o texto da CC0.
+// O texto das licencas vem quebrado em larguras diferentes conforme o pacote,
+// e ha quem quebre uma clausula no meio da frase. Comparar trecho literal
+// contra isso falha por motivo tipografico, nao juridico.
+const normalizarEspacos = (t) => t.replace(/\s+/gu, " ").trim();
+
 function corroborada(licenca, textos) {
-  const corpo = textos.map((t) => t.texto).join("\n");
+  const corpo = normalizarEspacos(textos.map((t) => t.texto).join("\n"));
   const conjuntos = licenca
     .split(/\bAND\b/u)
     .map((t) => t.trim())
@@ -351,7 +387,7 @@ function corroborada(licenca, textos) {
     if (!marcadores) {
       return { ok: false, motivo: `sem marcador declarado para ${termo}` };
     }
-    if (!marcadores.some((m) => corpo.includes(m))) {
+    if (!marcadores.some((m) => corpo.includes(normalizarEspacos(m)))) {
       return {
         ok: false,
         motivo: `nenhum marcador de ${termo} aparece no texto reproduzido`,
@@ -365,7 +401,7 @@ function elegerLicencas(componentes) {
   const pendentes = [];
   for (const c of componentes) {
     const expressao = c.licencaDeclarada;
-    if (!ofereceEscolha(expressao)) continue;
+    if (!precisaDeValidacao(expressao)) continue;
 
     const explicita = POLICY.licenseElections[c.id];
     if (explicita) {
@@ -374,6 +410,28 @@ function elegerLicencas(componentes) {
       if (explicita.expression !== expressao) {
         pendentes.push(
           `${c.id}: a politica registra a expressao "${explicita.expression}" mas o pacote declara "${expressao}"`,
+        );
+        continue;
+      }
+      // Objeto vazio ou sem `elected` produziria `Licenca eleita: undefined`.
+      if (typeof explicita.elected !== "string" || !explicita.elected.trim()) {
+        pendentes.push(
+          `${c.id}: entrada em licenseElections sem \`elected\` utilizavel`,
+        );
+        continue;
+      }
+      // A eleita precisa ser permitida pela propria expressao.
+      const oferecidos = expressao
+        .split(/\bOR\b|\bAND\b|\//u)
+        .map((t) => t.replace(/[()]/gu, "").trim())
+        .filter(Boolean);
+      const forasteiros = explicita.elected
+        .split(/\bAND\b/u)
+        .map((t) => t.trim())
+        .filter((t) => t && !oferecidos.includes(t));
+      if (forasteiros.length) {
+        pendentes.push(
+          `${c.id}: a eleicao registrada cita ${forasteiros.join(", ")}, que a expressao "${expressao}" nao oferece`,
         );
         continue;
       }
@@ -432,12 +490,32 @@ const semTexto = [];
 for (const c of lista) {
   const fallback = POLICY.licenseFallbacks[c.id];
   if (fallback) {
+    // O fallback carrega proveniencia travada num commit especifico. Aplica-lo
+    // a um pacote que passou a vir de outra origem publicaria a proveniencia
+    // de um artefato pelo de outro.
+    if (!(c.origemPacote || "").startsWith("https://registry.npmjs.org/")) {
+      semTexto.push(
+        `${c.id}: tem fallback declarado, mas o lockfile resolve para "${c.origemPacote ?? "origem ausente"}", que nao e o registro canonico; a proveniencia travada nao se aplica`,
+      );
+      continue;
+    }
+    const textos = fallback.fragments
+      .map((f) => ({
+        arquivo: POLICY.fragments[f].path,
+        texto: (fragmentos.get(f) || "").trim(),
+      }))
+      .filter((t) => t.texto);
+    // Fallback sem fragmento, ou apontando para arquivo so com espacos, nao
+    // produz aviso nenhum: seguiria adiante emitindo cabecalho sem licenca.
+    if (!textos.length) {
+      semTexto.push(
+        `${c.id}: o fallback declarado nao produz nenhum texto de licenca`,
+      );
+      continue;
+    }
     c.origemDoTexto = "fragmento vendorizado";
     c.fallback = fallback;
-    c.textos = fallback.fragments.map((f) => ({
-      arquivo: POLICY.fragments[f].path,
-      texto: fragmentos.get(f).trim(),
-    }));
+    c.textos = textos;
     continue;
   }
   const achados = textosDeLicenca(c.diretorio);
@@ -484,7 +562,17 @@ const linhas = [
         "",
       ]
     : []),
-  "Dependencias de desenvolvimento nao constam: nao sao servidas ao usuario.",
+  "Dependencias de desenvolvimento nao constam, por nao serem servidas ao",
+  "usuario, com uma excecao declarada: ferramenta de build que injeta codigo",
+  "proprio no artefato entra apesar da marcacao, porque esse codigo e servido.",
+  ...(lista.filter((c) => c.injetaRuntime).length
+    ? lista
+        .filter((c) => c.injetaRuntime)
+        .map(
+          (c) =>
+            `  ${c.nome}: ${POLICY.scope.npm.runtimeInjectingBuildTools[c.nome].reason}`,
+        )
+    : []),
   "Gerado por scripts/generate-notices.mjs a partir de package-lock.json,",
   "excluindo as entradas que o npm marca como dev.",
   `Codigo-fonte do produto: ${POLICY.project.sourceRepository}`,
