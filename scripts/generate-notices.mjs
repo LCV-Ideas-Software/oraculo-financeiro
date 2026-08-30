@@ -22,7 +22,6 @@
 //   node scripts/generate-notices.mjs            grava os arquivos
 //   node scripts/generate-notices.mjs --check    nao grava; falha se divergir
 
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
