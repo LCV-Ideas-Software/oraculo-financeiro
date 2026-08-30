@@ -25,3 +25,22 @@
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^4.1.10 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.125.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
+
+## Eleição de licença em expressões OR
+
+Duas linhas acima declaram expressão dupla: `@biomejs/biome` e `wrangler`, ambas
+`MIT OR Apache-2.0`. As duas são dependências de **desenvolvimento** e não são
+servidas ao navegador, portanto não há eleição a fazer na superfície
+distribuída.
+
+Varredura do `package-lock.json` em 30/08/2026, excluindo as entradas que o npm
+marca como `dev`: **nenhuma** dependência distribuída declara expressão OR.
+Caso alguma passe a declarar, a eleição precisa ser registrada aqui antes do
+merge.
+
+## Avisos de terceiros
+
+O inventário acima nomeia as licenças. O **texto integral** de cada componente
+servido ao navegador está em `THIRD-PARTY-NOTICES.txt`, gerado por
+`npm run notices` e conferido por `npm run notices:check` nos workflows de
+`pull_request` e de deploy.

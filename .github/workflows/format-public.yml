@@ -57,3 +57,7 @@ jobs:
           # idênticas e fiéis ao package.json/lockfile — o mesmo gate roda no
           # deploy, mas aqui ele rejeita o drift em pull_request/merge_group.
           node scripts/verify-thirdparty.mjs
+          # Gate dos avisos (ORAFINC-15) ANTES do merge: o texto integral de
+          # licença de cada componente servido ao navegador precisa continuar
+          # fiel às dependências instaladas, nas duas cópias publicadas.
+          node scripts/generate-notices.mjs --check

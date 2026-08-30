@@ -26,6 +26,8 @@
     "preview": "vite preview",
     "test": "vitest run && npm run test:official-actions",
     "test:official-actions": "node --test scripts/official-actions-contract.mjs",
+    "notices": "node scripts/generate-notices.mjs",
+    "notices:check": "node scripts/generate-notices.mjs --check",
     "format": "biome format --write src",
     "format:public": "prettier --write \"**/index.html\"",
     "format:public:check": "prettier --check \"**/index.html\""

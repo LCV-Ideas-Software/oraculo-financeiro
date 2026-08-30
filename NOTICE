@@ -2,5 +2,13 @@ Copyright © 2026 LCV Ideas & Software
 
 AVISOS DE TERCEIROS (THIRD-PARTY NOTICES)
 -----------------------------------------
-Este repositório pode conter dependências ou componentes de terceiros distribuídos sob licenças compatíveis (ex: Apache License 2.0). 
-Detalhes na tabela THIRDPARTY.md.
+O inventário das dependências deste projeto está em THIRDPARTY.md.
+
+O texto integral de licença de cada componente de terceiro efetivamente servido
+ao navegador está em THIRD-PARTY-NOTICES.txt, que acompanha este arquivo na
+superfície legal publicada. Nomear a licença não preserva o aviso dela: MIT,
+ISC, BSD e Apache-2.0 exigem que o texto e a linha de copyright acompanhem a
+distribuição.
+
+Dependências de desenvolvimento não constam desses avisos porque não são
+servidas ao usuário.
