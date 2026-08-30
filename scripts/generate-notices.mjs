@@ -149,32 +149,90 @@ function textosDeLicenca(dir) {
   );
   const achados = [...portadores, ...suplementares];
 
+  const nomesPortadores = new Set(portadores);
   const partes = [];
+  let portadorLido = false;
   for (const a of achados.sort()) {
     // Le direto em vez de checar o tipo antes: consultar e depois usar deixa
     // uma janela entre as duas chamadas. Um diretorio faz readFileSync lancar
     // EISDIR, que o catch trata, com o mesmo efeito e sem a janela.
     try {
       const t = paraLf(readFileSync(join(dir, a), "utf8")).trim();
-      if (t) partes.push({ arquivo: a, texto: t });
+      if (!t) continue;
+      partes.push({ arquivo: a, texto: t });
+      if (nomesPortadores.has(a)) portadorLido = true;
     } catch {
       /* nao e arquivo legivel: segue */
     }
   }
-  return partes.length ? partes : null;
+  // Existir um nome portador nao basta: ele pode ser um diretorio `LICENSES/`
+  // ou um arquivo vazio, e nesse caso so sobraria material suplementar. So
+  // conta como coberto quando ao menos um portador rendeu texto de verdade.
+  return portadorLido ? partes : null;
+}
+
+// Componentes deixados de fora por restricao de plataforma, preenchido por
+// `componentes()` e reportado no cabecalho do arquivo gerado.
+let plataformaExcluidos = [];
+
+// npm documenta `os` e `cpu` como restricoes de plataforma. Um pacote opcional
+// restrito a outra plataforma nao e instalado e nao pode estar no artefato, e
+// exigi-lo faria o gate reprovar por uma ausencia legitima.
+function plataformaExcluida(meta) {
+  const casa = (lista, atual) => {
+    if (!Array.isArray(lista) || !lista.length) return true;
+    const negados = lista.filter((v) => v.startsWith("!")).map((v) => v.slice(1));
+    const permitidos = lista.filter((v) => !v.startsWith("!"));
+    if (negados.includes(atual)) return false;
+    return permitidos.length === 0 || permitidos.includes(atual);
+  };
+  return !casa(meta.os, process.platform) || !casa(meta.cpu, process.arch);
 }
 
 function componentes() {
   const lock = JSON.parse(
     readFileSync(resolve(RAIZ, POLICY.scope.npm.lock), "utf8"),
   );
+
+  // Um lockfile v1 guarda a arvore em `dependencies`, nao em `packages`. Tratar
+  // o indice ausente como conjunto vazio aprovaria um arquivo de avisos com
+  // zero componentes, que e o pior resultado possivel para um gate que existe
+  // para fechar em falha.
+  if (!lock.packages || Object.keys(lock.packages).length === 0) {
+    falhar("Formato de lockfile nao suportado:", [
+      `${POLICY.scope.npm.lock}: lockfileVersion=${lock.lockfileVersion ?? "ausente"} sem indice \`packages\``,
+      "Este gate exige lockfileVersion 2 ou superior. Rode: npm install",
+    ]);
+  }
+
+  const raizLock = lock.packages[""] || {};
+  const producaoNaRaiz = new Set([
+    ...Object.keys(raizLock.dependencies || {}),
+    ...Object.keys(raizLock.optionalDependencies || {}),
+  ]);
+  const devNaRaiz = new Set(Object.keys(raizLock.devDependencies || {}));
+
   const marcador = POLICY.scope.npm.excludeDevMarker;
   const saida = [];
   const vistos = new Set();
   const naoResolvidos = [];
-  for (const [chave, metaOriginal] of Object.entries(lock.packages || {})) {
+  const excluidosPorPlataforma = [];
+  for (const [chave, metaOriginal] of Object.entries(lock.packages)) {
     if (!chave.startsWith("node_modules/")) continue;
     if (metaOriginal[marcador] === true) continue;
+
+    // Um link de workspace nao recebe a marcacao `dev` mesmo quando a raiz so o
+    // declara em devDependencies, e o alvo resolvido tampouco recupera essa
+    // informacao. O alcance vem, entao, das secoes da raiz.
+    if (metaOriginal.link === true) {
+      const nomeLink = nomeDaChaveDoLock(chave);
+      if (devNaRaiz.has(nomeLink) && !producaoNaRaiz.has(nomeLink)) continue;
+    }
+
+    if (plataformaExcluida(metaOriginal)) {
+      excluidosPorPlataforma.push(nomeDaChaveDoLock(chave));
+      continue;
+    }
 
     // Uma entrada com `link: true` (dependencia `file:` ou de workspace) nao
     // carrega versao nem licenca: esses metadados vivem na entrada alvo. Pular
@@ -217,6 +275,9 @@ function componentes() {
       naoResolvidos,
     );
   }
+  // Registrado, nao silenciado: quem auditar o arquivo precisa saber que houve
+  // exclusao por plataforma e quantas foram.
+  plataformaExcluidos = [...new Set(excluidosPorPlataforma)].sort();
   return saida.sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -229,15 +290,30 @@ function componentes() {
 // Somente duas formas sao eleitas automaticamente, ambas inequivocas: uma
 // disjuncao plana e a forma legada do Cargo. Qualquer outra e recusada e exige
 // entrada explicita. Nao se interpreta aqui a gramatica do SPDX.
+// Um identificador SPDX e um token curto de letras, digitos, ponto, mais e
+// hifen. Nunca contem dois-pontos nem barra. Exigir essa forma impede que uma
+// URL de licenca — que o campo `license` de pacotes antigos as vezes traz —
+// seja lida como se fosse uma escolha entre alternativas.
+const IDENTIFICADOR_SPDX = /^[A-Za-z0-9][A-Za-z0-9.+-]*$/u;
+
+function pareceUrl(expressao) {
+  return expressao.includes(":");
+}
+
 function termosDeEscolha(expressao) {
   const e = expressao.trim();
+  if (pareceUrl(e)) return null;
   if (e.includes("(") || e.includes(")")) return null;
   if (/\bAND\b/u.test(e) || /\bWITH\b/u.test(e)) return null;
   if (/\bOR\b/u.test(e)) {
-    return e
+    const termos = e
       .split(/\bOR\b/u)
       .map((t) => t.trim())
       .filter(Boolean);
+    if (termos.length >= 2 && termos.every((t) => IDENTIFICADOR_SPDX.test(t))) {
+      return termos;
+    }
+    return null;
   }
   // Forma legada do Cargo. Aparece com e sem espacos ao redor da barra
   // (`MIT/Apache-2.0` e `Apache-2.0 / MIT`), e ambas sao a mesma disjuncao.
@@ -246,7 +322,7 @@ function termosDeEscolha(expressao) {
       .split("/")
       .map((t) => t.trim())
       .filter(Boolean);
-    if (termos.length >= 2 && termos.every((t) => !t.includes(" "))) {
+    if (termos.length >= 2 && termos.every((t) => IDENTIFICADOR_SPDX.test(t))) {
       return termos;
     }
   }
@@ -255,6 +331,10 @@ function termosDeEscolha(expressao) {
 
 function ofereceEscolha(expressao) {
   if (!expressao) return false;
+  // Uma URL nao oferece escolha nenhuma: a barra ali e caminho, nao disjuncao.
+  // Sem esta guarda, `https://opensource.org/licenses/MIT` seria dividido e
+  // renderia a afirmacao falsa de que MIT foi eleita entre alternativas.
+  if (pareceUrl(expressao)) return false;
   return /\bOR\b/u.test(expressao) || expressao.includes("/");
 }
 
@@ -345,6 +425,14 @@ const linhas = [
   `  texto do pacote instalado: ${lista.filter((c) => c.origemDoTexto === "pacote instalado").length}`,
   `  texto vendorizado ........: ${lista.filter((c) => c.origemDoTexto === "fragmento vendorizado").length}`,
   "",
+  ...(plataformaExcluidos.length
+    ? [
+        `Excluidos por restricao de plataforma (${process.platform}/${process.arch}): ${plataformaExcluidos.length}`,
+        `  ${plataformaExcluidos.join(", ")}`,
+        "  Nao sao instalados nesta plataforma e portanto nao entram no artefato.",
+        "",
+      ]
+    : []),
   "Dependencias de desenvolvimento nao constam: nao sao servidas ao usuario.",
   "Gerado por scripts/generate-notices.mjs a partir de package-lock.json,",
   "excluindo as entradas que o npm marca como dev.",
