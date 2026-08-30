@@ -239,11 +239,16 @@ function termosDeEscolha(expressao) {
       .map((t) => t.trim())
       .filter(Boolean);
   }
-  if (e.includes("/") && !e.includes(" ")) {
-    return e
+  // Forma legada do Cargo. Aparece com e sem espacos ao redor da barra
+  // (`MIT/Apache-2.0` e `Apache-2.0 / MIT`), e ambas sao a mesma disjuncao.
+  if (e.includes("/")) {
+    const termos = e
       .split("/")
       .map((t) => t.trim())
       .filter(Boolean);
+    if (termos.length >= 2 && termos.every((t) => !t.includes(" "))) {
+      return termos;
+    }
   }
   return null;
 }
