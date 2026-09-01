@@ -207,12 +207,12 @@ export const POLICY = Object.freeze({
       rationale:
         "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
     }),
-    "lucide-react@1.33.0": Object.freeze({
+    "lucide-react@1.34.0": Object.freeze({
       ecosystem: "npm",
       source:
-        "https://registry.npmjs.org/lucide-react/-/lucide-react-1.33.0.tgz",
+        "https://registry.npmjs.org/lucide-react/-/lucide-react-1.34.0.tgz",
       integrity:
-        "sha512-MTRwMy0ZlL8Ur/vOAiJ9XGHE+kFPC7brq6MxAm0GiGXEBj0qy0jA/pG4N675oSzciO/UCdX8T+5yUQdmDeTLxg==",
+        "sha512-vnjGJNI7Htk5+oWW8gXGuaLgwgAb0T6/iZbBrp9JCfRFwdNWZ0YTm3eyxjOLgwN6r8iyAf3UA70zNmBRBNv7yg==",
       licenses: Object.freeze(["ISC", "MIT"]),
       files: Object.freeze({
         LICENSE:
