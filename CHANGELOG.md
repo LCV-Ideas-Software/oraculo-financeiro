@@ -15,6 +15,8 @@
 
 ### Changed
 
+- Os dois inventarios legais registram o Wrangler 4.127.1 selecionado pelo
+  manifesto e pelo lockfile do PR de dependencias, mantendo a licenca declarada.
 - `npm-install-checks` foi atualizado para 9.0.0; os inventários legais raiz e
   público acompanham o artefato BSD-2-Clause, cujo requisito de Node.js agora
   coincide com o intervalo já adotado pelo repositório.
