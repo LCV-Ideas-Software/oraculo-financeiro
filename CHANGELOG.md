@@ -15,6 +15,9 @@
 
 ### Changed
 
+- Removido o `actions.lock` legado que impedia workflows de iniciar, junto de
+  seus consumidores diretos. Os SHAs, permissoes e gates dos workflows permanecem
+  preservados; a correcao nao amplia a reforma de governanca.
 - A action oficial Linear Release e seu CLI acompanham a versao 0.17.2. O
   contrato verifica a origem oficial, o SHA completo e a versao explicita do
   CLI, sem exigir a referencia antiga da Linear no inventario legado de actions.
