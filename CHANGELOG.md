@@ -1,61 +1,70 @@
 # Changelog — Oráculo Financeiro
 
-## [Unreleased]
+## [v01.11.04] - 08/09/2026
 
-### Decidido
+### Added
 
-- **Ferramental de lint consolidado por decisão do operador (17/08/2026, issue
-  #212): o Biome PERMANECE como gate obrigatório de CI**, ao lado do ESLint. A
-  direção declarada na v01.09.00 ("ESLint fica como único enforcer de hook
-  deps, Biome fica só como formatter") está **superada**: o arranjo vigente —
-  ESLint (`npm run lint`, com `eslint-plugin-react-hooks` como enforcer de
-  hook deps) E Biome (`npm run biome`, lint+format) como gates do `deploy.yml`
-  — é o desenho intencional, não contradição. Os dois cobrem classes de
-  problema distintas e o custo de manter ambos é um passo de CI.
+- Reforma de governança web nativa, rastreada em ORAFINC-18 / #297, com CI local
+  ao repositório e auto-merge nativo do Dependabot. A admissão exige a configuração
+  dos quatro checks nativos `CI`, `Build Pages artifact`, `Dependency Review` e
+  `Run zizmor`, sem impor revisão humana ou de IA aos PRs de dependências.
+- Documento `INBOUND.md` com a política de direitos de contribuição do padrão
+  aprovado; `CONTRIBUTING.md` referencia o instrumento escrito e não presume
+  transferência de copyright pela abertura de um PR.
+- Observabilidade nativa do Scorecard pelo badge e histórico filtrados por
+  `schedule`; execuções semanais são best-effort, e `push` em `main` valida as
+  mudanças admitidas independentemente do agendamento.
 
 ### Changed
 
-- Removido o `actions.lock` legado que impedia workflows de iniciar, junto de
-  seus consumidores diretos. Os SHAs, permissoes e gates dos workflows permanecem
-  preservados; a correcao nao amplia a reforma de governanca.
-- A action oficial Linear Release e seu CLI acompanham a versao 0.17.2. O
-  contrato verifica a origem oficial, o SHA completo e a versao explicita do
-  CLI, sem exigir a referencia antiga da Linear no inventario legado de actions.
-- Os dois inventarios legais registram o Wrangler 4.127.1 selecionado pelo
-  manifesto e pelo lockfile do PR de dependencias, mantendo a licenca declarada.
-- A revisao de licencas do Lucide acompanha o artefato npm `lucide-react` 1.38.0,
-  cujo `LICENSE` e byte-identico ao texto ISC/MIT anteriormente revisado. Os
-  avisos distribuidos preservam integralmente as duas licencas e atribuicoes.
-- `npm-install-checks` foi atualizado para 9.0.0; os inventários legais raiz e
-  público acompanham o artefato BSD-2-Clause, cujo requisito de Node.js agora
-  coincide com o intervalo já adotado pelo repositório.
-- O gate de avisos passa a aplicar a semantica oficial de plataforma do npm,
-  classificar o grafo por localizacao instalada (preservando aliases, versoes e
-  origens distintas), resolver links antes da validacao e exigir eleicoes SPDX
-  concretas e metadados de licenca verificaveis, vinculados ao artefato exato.
-  O texto integral e comprovado pelo Licensee oficial do GitHub, exigindo
-  matcher Exact e confianca 100; variantes legitimas nao reconhecidas ficam
-  presas a revisao explicita por origem, integridade, conjunto de arquivos e
-  SHA-256. Inspecoes manuais nao podem substituir declaracoes SPDX validas, e a
-  identidade de integridade passa pelo parser SRI estrito oficial do npm.
-  Ramos opcionais incompativeis agora sao podados com todos os descendentes no
-  grafo virtual oficial do lockfile, independente da plataforma do host, sem
-  remover um filho que tambem possua caminho compativel.
-  Politicas sem SRI so podem selecionar uma origem Git presa a commit completo,
-  e o intervalo Node do repositorio acompanha o requisito efetivo do `ssri`.
-  O Licensee também entra na manutenção nativa do Dependabot para Bundler; no
-  deploy, suas dependencias sao instaladas em modo congelado e sem restaurar
-  cache de CI antes da publicacao.
-- O Linear Release passa a usar a action oficial da Linear v0.16.0, fixada por SHA, sem alterar o gatilho pós-Deploy nem o SHA efetivamente publicado. A fila usa `queue: max`, e falhas da action tornam o workflow vermelho. Um teste de contrato também preserva os dois deploys oficiais do Wrangler e registra que não há envio direto ao Slack neste repositório.
-- Dependencias de desenvolvimento atualizadas, incluindo `typescript-eslint` 8.67.0 e Wrangler 4.123.0; o override vulneravel que rebaixava `undici` foi removido e o pacote raiz agora e explicitamente privado.
-- CodeQL, Dependency Review, Zizmor, OpenSSF Scorecard, GitHub Pages e deploy Cloudflare passam a usar apenas implementacoes oficiais com permissoes minimas e referencias externas fixadas por SHA.
-- Os dois arquivos Wrangler passam a versionar o identificador autorizado da D1 existente. O UUID identifica o recurso, mas nao concede acesso; tokens e credenciais continuam em Secrets.
-- O controle de versao permanece interno em `APP v01.11.02`, inclusive no rodape. Este web app deixa de criar Releases e tags do GitHub; objetos historicos ficam transitorios ate a limpeza posterior ao deploy validado.
-- O Auto-add nativo dos Projects #10 e #17 substitui a automacao de inclusao mantida no repositorio, preservando o ritual G1..G4 em `AGENTS.md` e `CLAUDE.md`.
+- CI de PR e Deploy mantêm ESLint, Biome, testes, build e a verificação HTML do
+  Prettier. Biome permanece obrigatório ao lado de ESLint, conforme a decisão
+  de 17/08/2026 em #212; não foi reduzido a formatter opcional.
+- Dependabot adota execução semanal às segundas-feiras, 06:00
+  America/Sao_Paulo, cooldown de sete dias com exclusão de `actions/*` e
+  `github/*`, rebases automáticos e agrupamento de minor/patch. Majors ficam em
+  PRs separados, sujeitos ao mesmo auto-merge e aos checks nativos.
+- GitHub Pages valida o artefato `site/` em PR e publica somente de `main`.
+  CodeQL usa Default Setup; Dependency Review, Zizmor e Scorecard usam actions
+  oficiais diretamente, com SHAs completos e permissões mínimas. Scorecard
+  envia SARIF ao repositório sem publicação pública adicional de resultados.
+- Linear Release usa a action e o CLI oficiais v0.17.2, após Deploy bem-sucedido
+  originado por push em `main` deste repositório, com checkout do SHA publicado.
+  Execuções manuais de Deploy não criam release Linear. A fila permanece
+  `queue: max` e as falhas continuam visíveis; nenhuma integração direta com
+  Slack ou controlador central é acrescentada.
+- A publicação Cloudflare preserva Pages/Functions e o Cron Worker
+  `taxaipca-motor`, a D1 existente, credenciais e Wrangler 4.127.1. Cálculos
+  financeiros, Vertex, seletores de modelo, sanitização e testes do produto
+  permanecem; o intervalo de Node.js do manifesto não muda.
+- Os avisos integrais estáticos e suas cópias públicas são preservados: 5
+  componentes do navegador e 17 das Pages Functions, incluindo os textos
+  ISC/MIT completos de `lucide-react` 1.38.0 e a evidência estática de
+  `launder` 1.7.1. Sua manutenção passa a ser documentada como revisão manual de
+  um retrato, sem alegar geração ou verificação automática a cada publicação.
+- Inventários raiz e público retiram somente o ferramental legal aposentado,
+  mantendo as demais dependências, seus intervalos e o Wrangler 4.127.1.
+- A versão interna passa a `APP v01.11.04` / `package.json` 1.11.4. O pacote
+  permanece privado: este projeto web não publica pacotes npm ou Windows,
+  Releases ou tags de versão do GitHub. Identificadores não secretos necessários
+  à configuração oficial podem ser versionados; credenciais continuam privadas.
+- O Auto-add nativo dos Projects #10 e #17 e o registro GitHub–Linear são
+  mantidos, sem automação paralela de inclusão de itens no repositório.
 
 ### Removed
 
-- Native Auto-merge, Auto-release, add-to-project, gate SARIF, reusable Zizmor, manifestos por blob, validadores de fronteira e bootstrap D1 proprios foram aposentados; nenhuma camada customizada equivalente os substitui.
+- Workflow separado Public Format, gatilhos de merge queue e workflow CodeQL
+  avançado legado. A verificação HTML do Prettier continua no CI e Deploy.
+- Gerador e verificadores customizados de avisos/inventário legal, testes
+  exclusivos de governança e respectivos consumidores; Gemfile, Ruby/Licensee,
+  atualização Bundler e dependências exclusivas `npm-install-checks`,
+  `spdx-expression-parse` e `ssri`. Os textos completos de terceiros e
+  `scripts/legal/launder-mit.txt` não são removidos nem substituídos por um
+  relatório limitado ao navegador.
+- Permanecem aposentados `actions.lock` e seus consumidores, Auto-release,
+  automação customizada de Projects, gate SARIF, reusable Zizmor, manifestos
+  por blob, validadores de fronteira e bootstrap D1 próprios. O auto-merge
+  atual é nativo do GitHub; nenhuma camada customizada equivalente é criada.
 
 ## [v01.11.03] - 2026-08-20
 

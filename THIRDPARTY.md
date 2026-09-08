@@ -15,15 +15,11 @@
 | eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
 | globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals |
 | happy-dom | ^20.11.6 | MIT | Não | https://registry.npmjs.org/happy-dom |
-| licensee | 10.1.0 | MIT | Não | https://rubygems.org/gems/licensee/versions/10.1.0 |
 | lucide-react | ^1.31.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
-| npm-install-checks | 9.0.0 | BSD-2-Clause | Não | https://registry.npmjs.org/npm-install-checks |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
-| spdx-expression-parse | ^5.0.0 | MIT | Não | https://registry.npmjs.org/spdx-expression-parse |
-| ssri | 14.0.0 | ISC | Não | https://registry.npmjs.org/ssri |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
@@ -33,27 +29,37 @@
 ## Eleição de licença em expressões OR
 
 Duas linhas acima declaram expressão dupla: `@biomejs/biome` e `wrangler`, ambas
-`MIT OR Apache-2.0`. As duas são dependências de **desenvolvimento** e não são
-servidas ao navegador, portanto não há eleição a fazer na superfície
-distribuída.
+`MIT OR Apache-2.0`. São ferramentas de **desenvolvimento**, não componentes
+incorporados ao navegador ou às Pages Functions neste retrato; não há eleição
+adicional dessas ferramentas para a superfície distribuída.
 
-Varredura do `package-lock.json` em 30/08/2026, excluindo as entradas que o npm
-marca como `dev`: **nenhuma** dependência distribuída declara expressão OR.
-
-Essa afirmação não depende da data: o gate `npm run notices:check` reprova
-quando qualquer componente distribuído passa a oferecer escolha de licença sem
-eleição registrada. A política declara uma ordem de preferência aplicada às
-formas inequívocas — uma disjunção plana e a forma legada do Cargo — e recusa
-qualquer outra expressão, exigindo entrada explícita. A licença eleita aparece
-ao lado do componente em `THIRD-PARTY-NOTICES.txt`.
+Na revisão de 08/09/2026, os 22 componentes dos avisos integrais mantidos não
+declaram expressão OR. Essa constatação pertence a esse retrato, não é uma
+garantia sobre atualizações futuras. Uma mudança de dependência, licença ou
+superfície distribuída exige nova revisão, incluindo eventual eleição de
+licença e preservação dos textos e atribuições aplicáveis.
 
 ## Avisos de terceiros
 
-O inventário acima nomeia as licenças. O **texto integral** de cada componente
-incorporado ao que o projeto publica — no bundle do navegador ou nas Pages
-Functions do servidor, com o escopo de cada um — está em
-`THIRD-PARTY-NOTICES.txt`, gerado por `npm run notices` e conferido por
-`npm run notices:check` nos workflows de `pull_request` e de deploy. A prova
-padrão usa a versão do Licensee fixada no `Gemfile.lock`, detector oficial do
-GitHub, com matcher `Exact` e confiança 100. Variante integral não reconhecida exatamente só passa por
-revisão explícita presa à origem, integridade, conjunto de arquivos e SHA-256.
+O inventário acima registra as dependências diretas e seus intervalos declarados.
+O **texto integral** dos componentes incorporados ao que o projeto publica está
+em `THIRD-PARTY-NOTICES.txt`: o retrato preservado na reforma cobre 5 componentes
+do navegador e 17 das Pages Functions, com versões exatas, escopo, textos e
+atribuições. Vite consta porque injeta o runtime de module-preload no navegador;
+a marcação `dev` do npm, isoladamente, não determina o que é distribuído.
+
+Os avisos completos e os documentos legais têm cópias em `public/legal/`,
+expostas pela aplicação. Sua manutenção é manual: quando dependências ou
+artefatos publicados mudarem, revisar o alcance de navegador e servidor,
+atualizar os textos aplicáveis e manter as cópias coerentes. A reforma preserva
+os avisos integrais existentes; não acrescenta um segundo relatório de licenças
+do Vite que cubra apenas o bundle do navegador.
+
+A referência a `scripts/generate-notices.mjs` no cabeçalho dos avisos integrais
+é a proveniência histórica de sua geração, não um comando disponível. O gerador,
+os verificadores customizados e seu ferramental Ruby/Licensee foram aposentados:
+não há geração a cada publicação nem verificação automática contínua de
+inventário, texto ou artefato. O fragmento estático
+`scripts/legal/launder-mit.txt` permanece como evidência de proveniência do texto
+vendorizado já registrado para `launder` 1.7.1; sua preservação não constitui
+uma nova decisão de licença.

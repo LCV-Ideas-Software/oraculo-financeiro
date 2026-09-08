@@ -7,19 +7,22 @@
 [![status: stable](https://img.shields.io/badge/status-stable-brightgreen.svg)](#status)
 [![Deploy](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/deploy.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/deploy.yml)
 [![Pages](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/pages.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/pages.yml)
-[![CodeQL](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/codeql.yml/badge.svg)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard (weekly)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/scorecard.yml/badge.svg?event=schedule)](https://github.com/LCV-Ideas-Software/oraculo-financeiro/actions/workflows/scorecard.yml?query=event%3Aschedule)
 [![runtime: Cloudflare Pages](https://img.shields.io/badge/runtime-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![framework: React 19 + Vite 8](https://img.shields.io/badge/framework-React%2019%20%2B%20Vite%208-61dafb.svg)](https://react.dev/)
 [![license: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
 **Oráculo Financeiro** — dashboard de análise financeira focado em renda fixa indexada à inflação (LCI/CDB com IPCA+, Tesouro IPCA+ etc.) com análise contextual via Gemini AI no Vertex AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store + Cron Worker auxiliar para pre-warming de cache de taxa.
 
-**Status.** Stable. Current internal application version: **APP v01.11.03**. See [CHANGELOG.md](./CHANGELOG.md) for the full application history. This web app does not create new GitHub Releases or version tags; legacy objects, if visible during the migration window, are transitional.
+**Status.** Stable. Current internal application version: **APP v01.11.04**. See [CHANGELOG.md](./CHANGELOG.md) for the full application history. This web app does not publish npm or Windows packages, GitHub Releases or version tags.
+
+**OpenSSF Scorecard freshness.** GitHub Actions schedules are best-effort and [can be delayed during periods of high load](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). The native badge and its schedule-filtered history show the latest weekly result and execution timestamp; supported `push` runs independently validate changes merged into `main`.
 
 The version history at a glance:
 
 | Internal version | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v01.11.04`** | **Native governance reform.** Repository-local CI, Dependabot auto-merge, CodeQL Default Setup, Pages and Linear Release. Retires custom legal gates while preserving complete static browser/server notices, Pages Functions, the Cron Worker and financial behavior. |
 | **`v01.11.03`** | **Thread-audit hardening.** The legal-inventory gate (`verify-thirdparty`) becomes fail-closed (duplicate table rows and lockfile entries missing a license now fail), the Vertex unclassified-error label only passes native error names, `htmlToPlainText` preserves structural line breaks from the AI analysis, and the notification context memoizes its value. |
 | **`v01.11.02`** | **Test fixtures no longer commit the real GCP project id.** The v01.11.01 regression tests proved the Vertex detail stays out of responses by hardcoding the actual project id and a service-account address into this public repository; fixtures now use synthetic identifiers and additionally assert that the whole upstream message is absent. |
 | **`v01.11.01`** | **Upstream error detail no longer reaches the client.** The 500 body from both AI endpoints echoed the raw Vertex error, which carries the GCP project id, the service-account e-mail and the endpoint path; the body is now a stable message and the detail stays in `structuredLog` and in the `logAiUsage` telemetry. |
@@ -149,10 +152,40 @@ The Pages app and the Cron Worker are deployed independently but share the same 
 
 This repo's [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push to `main`. It validates the application and then uses the official Cloudflare Wrangler Action, pinned by full SHA, to deploy Pages and the Cron Worker. Both `wrangler.json` files version the same D1 identifier; Cloudflare API credentials remain protected in the `cloudflare-production` environment.
 
+The same ESLint, Biome, tests, build and Prettier HTML checks run in `CI` for
+pull requests to `main`. The standalone Public Format workflow is retired,
+not its HTML formatting coverage. GitHub Pages publishes the separate `site/`
+directory, with a read-only artifact build on PRs and deployment only from
+`main`. CodeQL uses GitHub Default Setup; Dependency Review, Zizmor and
+Scorecard use their official actions.
+
+Dependabot checks weekly on Monday at 06:00 America/Sao_Paulo, groups minor and
+patch version updates, and submits major updates separately. GitHub native
+auto-merge is armed for its same-repository PRs, including separate major
+updates; grouping is not an eligibility restriction. The rollout requires the
+four native checks (`CI`, `Build Pages artifact`, `Dependency Review`,
+`Run zizmor`) before admission. These dependency PRs do not require human or AI
+review, and there is no merge queue.
+
+Linear Release records successful push-triggered production deployments at the
+exact deployed SHA. Manual Deploy runs are available on `main`, but do not
+create a Linear release, matching the organizational starter workflow. The
+existing Linear–GitHub and Slack–GitHub integrations are retained; no custom
+cross-repository controller or direct Slack sender is introduced.
+
+The complete static [third-party notices](./THIRD-PARTY-NOTICES.txt) cover both
+the browser bundle and Pages Functions and remain available in the application's
+legal surface. Maintainers review and update these snapshots and their public
+copies when dependencies or distributed code change. The retired custom legal
+scripts no longer regenerate notices or verify inventory/artifact parity on
+every release. The financial logic, D1, Vertex authentication, sanitization and
+daily `taxaipca-motor` Worker remain product functionality, not governance gates.
+
 ## Repository conventions
 
 - **License**: [AGPL-3.0-or-later](./LICENSE). Network-service trigger applies: running a modified fork as a public service obligates you to publish modifications.
 - **Notices**: see [NOTICE](./NOTICE) and [THIRDPARTY](./THIRDPARTY.md).
+- **Inbound rights**: see [INBOUND.md](./INBOUND.md).
 - **Security disclosure**: see [SECURITY.md](./SECURITY.md).
 - **Code of conduct**: see [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 - **Changelog**: [CHANGELOG.md](./CHANGELOG.md).

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: oraculo-financeiro/src/App.tsx
-// Versão: v01.11.03
+// Versão: v01.11.04
 // Descrição: Frontend do Oráculo Financeiro — análise LCI/LCA e Tesouro IPCA+ com IA Gemini via Vertex AI.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -30,7 +30,7 @@ import {
 } from './lib/finance';
 import { htmlToPlainText } from './lib/html-to-plain-text';
 
-const APP_VERSION = 'APP v01.11.03';
+const APP_VERSION = 'APP v01.11.04';
 
 type TabId = 'lci-lca' | 'tesouro-ipca';
 
