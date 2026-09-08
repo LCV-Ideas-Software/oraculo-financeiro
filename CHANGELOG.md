@@ -15,6 +15,9 @@
 
 ### Changed
 
+- A action oficial Linear Release e seu CLI acompanham a versao 0.17.2. O
+  contrato verifica a origem oficial, o SHA completo e a versao explicita do
+  CLI, sem exigir a referencia antiga da Linear no inventario legado de actions.
 - `npm-install-checks` foi atualizado para 9.0.0; os inventários legais raiz e
   público acompanham o artefato BSD-2-Clause, cujo requisito de Node.js agora
   coincide com o intervalo já adotado pelo repositório.

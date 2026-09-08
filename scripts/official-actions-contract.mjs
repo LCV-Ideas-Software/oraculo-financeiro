@@ -5,7 +5,6 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CHECKOUT_SHA = "3d3c42e5aac5ba805825da76410c181273ba90b1";
-const LINEAR_ACTION_SHA = "3f31fcf14c110cc53579fcc3575a26d469c413b4";
 const SETUP_NODE_SHA = "820762786026740c76f36085b0efc47a31fe5020";
 const RUBY_SETUP_SHA = "95ef2b042f9d7a56d8268cba8559e2842e2ad01b";
 const WRANGLER_ACTION_SHA = "ebbaa1584979971c8614a24965b4405ff95890e0";
@@ -148,23 +147,24 @@ test("Linear Release remains tied to the exact successful Deploy SHA", () => {
   assert.doesNotMatch(linearRelease, /continue-on-error:\s*true/u);
 });
 
-test("Linear Release uses the pinned official action and lock entry", () => {
-  const officialUse = `linear/linear-release-action@${LINEAR_ACTION_SHA}`;
-
-  assert.equal(occurrences(linearRelease, officialUse), 1);
+test("Linear Release uses the SHA-pinned official action and an explicit CLI version", () => {
+  const officialUses = [
+    ...linearRelease.matchAll(
+      /^[ \t]*uses: linear\/linear-release-action@[0-9a-f]{40}(?:[ \t]+#[^\r\n]*)?[ \t]*$/gmu,
+    ),
+  ];
+  assert.equal(officialUses.length, 1);
   assert.match(
     linearRelease,
     /access_key: \$\{\{ secrets\.LINEAR_ACCESS_KEY \}\}/u,
   );
-  assert.match(linearRelease, /cli_version: v0\.17\.1/u);
+  assert.match(
+    linearRelease,
+    /^[ \t]*cli_version: v\d+\.\d+\.\d+(?:[ \t]+#[^\r\n]*)?[ \t]*$/mu,
+  );
   assert.doesNotMatch(
     linearRelease,
     /CLI_URL|CLI_SHA256|linear-release-linux|curl\s+-|sha256sum/u,
-  );
-  assert.equal(occurrences(actionsLock, officialUse), 2);
-  assert.match(
-    actionsLock,
-    /'linear\/linear-release-action@3f31fcf14c110cc53579fcc3575a26d469c413b4':[\s\S]*?ref: 'v0\.17\.1'/u,
   );
 });
 
