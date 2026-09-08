@@ -207,23 +207,24 @@ export const POLICY = Object.freeze({
       rationale:
         "O Licensee devolve NOASSERTION para a variante integral publicada pelo upstream, que omite a palavra SOFTWARE na abertura do disclaimer. As duas condicoes de redistribuicao e o disclaimer foram conferidos contra a referencia oficial SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
     }),
-    "lucide-react@1.34.0": Object.freeze({
+    "lucide-react@1.38.0": Object.freeze({
       ecosystem: "npm",
       source:
-        "https://registry.npmjs.org/lucide-react/-/lucide-react-1.34.0.tgz",
+        "https://registry.npmjs.org/lucide-react/-/lucide-react-1.38.0.tgz",
       integrity:
-        "sha512-vnjGJNI7Htk5+oWW8gXGuaLgwgAb0T6/iZbBrp9JCfRFwdNWZ0YTm3eyxjOLgwN6r8iyAf3UA70zNmBRBNv7yg==",
+        "sha512-xZCyBd/wiVUDactoCc+42TjL0aB7EBOXsuX+tjz+W/sGzw2KhHpL1NOH3FIaVUcpimvUBpIYfz34Ofj9S5JEzQ==",
       licenses: Object.freeze(["ISC", "MIT"]),
       files: Object.freeze({
         LICENSE:
           "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
       }),
       referenceUrls: Object.freeze([
+        "https://lucide.dev/license",
         "https://spdx.org/licenses/ISC.html",
         "https://spdx.org/licenses/MIT.html",
       ]),
       rationale:
-        "O arquivo integral agrega a ISC declarada pelo pacote e a MIT dos icones derivados do Feather, portanto nao e correspondencia exata de uma unica licenca para o Licensee. As duas secoes foram conferidas contra as referencias oficiais SPDX em 30/08/2026; qualquer mudanca de bytes reprova.",
+        "O arquivo integral agrega a ISC declarada pelo pacote e a MIT dos icones derivados do Feather, portanto nao e correspondencia exata de uma unica licenca para o Licensee. Em 08/09/2026, o tarball npm 1.38.0 foi conferido contra a integridade do lockfile; seu LICENSE tem o mesmo SHA-256 dos bytes revisados na 1.34.0. As duas secoes e atribuicoes foram reconferidas contra o upstream Lucide e as referencias oficiais SPDX; qualquer mudanca de bytes reprova.",
     }),
     "source-map-js@1.2.1": Object.freeze({
       ecosystem: "npm",

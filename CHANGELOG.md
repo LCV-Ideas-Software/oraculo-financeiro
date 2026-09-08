@@ -15,6 +15,9 @@
 
 ### Changed
 
+- A revisao de licencas do Lucide acompanha o artefato npm `lucide-react` 1.38.0,
+  cujo `LICENSE` e byte-identico ao texto ISC/MIT anteriormente revisado. Os
+  avisos distribuidos preservam integralmente as duas licencas e atribuicoes.
 - `npm-install-checks` foi atualizado para 9.0.0; os inventários legais raiz e
   público acompanham o artefato BSD-2-Clause, cujo requisito de Node.js agora
   coincide com o intervalo já adotado pelo repositório.
