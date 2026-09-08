@@ -9,6 +9,7 @@ Thanks for your interest. Quick guide for filing issues and opening pull request
 1. **Read the [README](./README.md)** — it covers what the app does, the architecture, and how to deploy your own fork.
 2. **Read [SECURITY.md](./SECURITY.md)** — for security reports, do NOT open a public issue.
 3. **Check existing issues** before opening a new one.
+4. **Read [INBOUND.md](./INBOUND.md)** before submitting copyrightable material.
 
 ---
 
@@ -26,12 +27,20 @@ Thanks for your interest. Quick guide for filing issues and opening pull request
 
 ```bash
 npm ci
-npm run lint    # biome check
-npm run build   # tsc + vite build
-npm test        # vitest
+npm run lint                 # ESLint
+npm run biome                # Biome lint and format
+npm test                     # Vitest
+npm run build                # TypeScript and Vite
+npm run format:public:check   # Prettier HTML check
 ```
 
-All gates must be GREEN. CI will re-run these on push.
+All five checks must be GREEN. CI repeats them on pull requests to `main`;
+Deploy repeats them before publishing a push to `main` or an authorized manual
+run. The standalone Public Format workflow is retired, while its official
+Prettier HTML check remains in normal CI. Custom legal-inventory and artifact
+gates are retired. Review the complete static browser and Pages Functions
+notices and their public copies when dependencies or distribution surfaces change;
+they are not automatically regenerated or verified on every release.
 
 ### PR description
 
@@ -45,7 +54,11 @@ This repo enforces SHA-pinned GitHub Actions. Don't downgrade pinned actions to 
 
 ## License
 
-By contributing, you agree your contribution is licensed under [AGPL-3.0-or-later](./LICENSE). AGPL §13 applies to network-service operators of forks.
+The project license remains [AGPL-3.0-or-later](./LICENSE). Read
+[INBOUND.md](./INBOUND.md) for the ownership and written-rights verification
+required before copyrightable contributions are admitted. Opening a PR does not
+transfer copyright. AGPL §13 applies to network-service operators of modified
+forks under its terms.
 
 ---
 

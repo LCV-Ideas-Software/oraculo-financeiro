@@ -12,7 +12,10 @@ Pointer for AI agents working in this repository.
 ## Runtime Shape
 
 React 19 + Vite 8 single-page app on Cloudflare Pages with a D1 backing store and an
-auxiliary Cron Worker for rate-cache pre-warming. Source lives in `src/`.
+auxiliary Cron Worker for rate-cache pre-warming. Source lives in `src/`, Pages
+Functions in `functions/`, and the Cron Worker in `workers/taxaipca-motor/`.
+Both official Wrangler configurations select the existing D1 database. The
+separate GitHub Pages site is built from `site/`.
 
 ## Mandatory Gates
 
@@ -26,18 +29,50 @@ npm run format:public:check
 
 ## Workspace Policy
 
-Follow the workspace-root `AGENTS.md` directives of the private workspace that
-hosts this checkout (not versioned in this public repository). In
-particular: no self-review in cross-review gates, `ultrabrain` plus
-`cross-review-v2` before substantive closure, `cross-review-v1` only as fallback
-for v2, `main` as the deployment branch, and Commit & Sync only after final
-audit when requested.
+The current Enterprise/Organization reform standard supersedes earlier local
+governance instructions. Follow the workspace-root `AGENTS.md` directives:
+official native solutions, independent repositories, Ultrabrain for substantive
+reasoning and cross-review only where complexity warrants it. Do not introduce
+custom gates, controllers or mandatory human/AI reviews of Dependabot PRs.
+Prepare changes locally and present the complete report for operator approval
+before committing, pushing or opening a PR. GitHub configuration changes require
+separate explicit approval. Never change signing configuration or use Codespaces.
+
+This repository deploys a web application; it does not publish npm packages,
+Windows packages, GitHub Releases or version tags. Maintain the internal
+application version consistently in the manifest, source, README and SECURITY.
+
+CI validates PRs to `main` and manual dispatches; Deploy repeats the application
+checks and publishes `main` through the official Cloudflare Wrangler Action.
+Preserve both Pages/Functions and the `taxaipca-motor` Cron Worker, their shared
+D1 binding, Vertex service-account authentication, financial calculations,
+model-selection fallback, sanitization and product tests. Do not import runtime
+or deployment dependencies on another repository as part of governance work.
+
+Keep the complete static `THIRD-PARTY-NOTICES.txt` and its public copy: they cover
+both the browser bundle and Pages Functions. Review and update their exact
+component versions, full license texts, provenance and legal-document copies
+when relevant dependencies or distribution surfaces change. These are maintained
+snapshots, not automatically regenerated or verified on every release. Preserve
+`scripts/legal/launder-mit.txt` as static provenance evidence.
+
+Do not restore retired `actions.lock` consumers, custom legal inventory/artifact
+gates, advanced CodeQL workflows or merge queue. CodeQL uses Default Setup.
+Dependabot uses GitHub native auto-merge and the approved native required checks.
+The standalone Public Format workflow is retired; the official Prettier HTML
+check remains part of normal CI and Deploy alongside ESLint, Biome, tests and
+the build. Linear Release records successful push-triggered production Deploy
+runs at the exact deployed SHA; manual Deploy runs do not create a Linear release.
 
 ## Registro de trabalho (GitHub Projects, Issues e Discussions)
 
-A equipe e composta por tres membros: o **operador** (humano), **Claude Code** e **ChatGPT-Codex**.
-Quase todo trabalho acontece em par (operador+Claude ou operador+Codex). O que fica so no
-transcript da sessao se perde para o outro membro. Por isso o registro abaixo e **obrigatorio**.
+Existe um unico **operador humano**, assistido por **Claude Code** e **ChatGPT-Codex**.
+Os agentes nao constituem uma equipe de aprovadores humanos. O que fica so no
+transcript da sessao se perde para a proxima execucao; por isso o registro abaixo
+e **obrigatorio**. Mantenha GitHub e Linear vinculados, com conteudo e status
+coerentes nos Issues, Projects, Discussions, Teams, Initiatives e Cycles
+pertinentes. Preserve historico, prioridade e estados dos conteineres nao
+relacionados; aplique o label `Codex` ao trabalho conduzido pelo Codex.
 
 Quadro deste repositorio: `https://github.com/orgs/LCV-Ideas-Software/projects/10`
 Quadro consolidado da organizacao: `https://github.com/orgs/LCV-Ideas-Software/projects/17`
@@ -116,12 +151,11 @@ com desvios `Bloqueado` e `Descartado`.
 > proprios em cada quadro. Atualize os DOIS quadros — o deste repositorio e o portfolio
 > #17 — a cada transicao; ID de opcao de um quadro nunca vale no outro (Discussion org#176).
 
-### Identificadores e credenciais em repositorio publico
+### Configuration metadata and secrets
 
-Tokens, chaves, senhas e outras credenciais reais nunca podem ser versionados ou publicados.
-Em regra, use placeholders para identificadores operacionais. A unica excecao autorizada
-neste repositorio e o `database_name`/`database_id` do binding D1 `bigdata_db` nos dois
-arquivos `wrangler.json`: o UUID e identificador, nao credencial, e a configuracao oficial
-do Wrangler exige o valor para selecionar a D1 existente. Essa autorizacao nao cria
-precedente; qualquer outro identificador real exige pedido fundamentado e nova autorizacao
-explicita do operador.
+Nonsecret identifiers needed by official configuration may be versioned under
+the current operator directive. This includes the existing D1 `database_name`
+and `database_id` in both Wrangler configurations; they identify a resource,
+not a credential. Credentials, tokens, secret values and sensitive operational
+evidence must remain private. Do not rename resources, replace domain metadata,
+move bindings or modify GitHub settings as incidental cleanup.

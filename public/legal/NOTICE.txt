@@ -15,5 +15,11 @@ Dependências de desenvolvimento não constam desses avisos porque não são
 servidas ao usuário. A exceção é a ferramenta de build que injeta código próprio
 no pacote publicado: o Vite acrescenta ao ponto de entrada o runtime de
 module-preload dele, então é servido ao navegador e consta dos avisos, apesar da
-marcação de desenvolvimento. A exceção é declarada componente a componente em
-scripts/legal/thirdparty-policy.mjs, com o motivo e a evidência de cada uma.
+marcação de desenvolvimento. O motivo e o escopo constam dos avisos integrais.
+
+Esses avisos são mantidos como um retrato de navegador e servidor, com revisão
+manual quando dependências ou artefatos publicados mudarem. Seus textos
+integrais e atribuições devem permanecer completos e coerentes nas cópias raiz
+e public/legal/. A referência ao antigo gerador no cabeçalho de
+THIRD-PARTY-NOTICES.txt registra sua proveniência histórica; não representa
+geração ou verificação automática a cada publicação.

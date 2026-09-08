@@ -150,8 +150,8 @@ export function LicencasModule() {
         </h2>
         <p style={paragraphStyle}>
           O inventário acima nomeia cada componente e sua licença. O texto integral de cada uma delas, com as
-          respectivas linhas de copyright, é reproduzido em arquivo próprio, gerado a partir do package-lock.json a cada
-          publicação.
+          respectivas linhas de copyright, é preservado em arquivo próprio para os componentes do navegador e do
+          servidor. Esse documento é revisado e atualizado quando as dependências distribuídas mudam.
         </p>
         <p style={{ ...paragraphStyle, textIndent: 0 }}>
           <a href={THIRD_PARTY_NOTICES_URL} style={{ color: '#1a73e8' }}>

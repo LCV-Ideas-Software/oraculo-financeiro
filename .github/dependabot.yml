@@ -1,95 +1,61 @@
 version: 2
-
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "01:00"
-      timezone: "America/Los_Angeles"
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
     cooldown:
       default-days: 7
       exclude:
         - "actions/*"
         - "github/*"
+    rebase-strategy: auto
     labels:
       - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "deps"
       include: "scope"
     open-pull-requests-limit: 10
     groups:
-      codeql-action:
+      minor-e-patch:
         applies-to: version-updates
         patterns:
-          - "github/codeql-action*"
-      codeql-action-security-updates:
-        applies-to: security-updates
-        patterns:
-          - "github/codeql-action*"
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "01:00"
-      timezone: "America/Los_Angeles"
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
     cooldown:
       default-days: 7
+    rebase-strategy: auto
     labels:
       - "dependencies"
-      - "npm"
-      - "frontend"
     commit-message:
       prefix: "deps"
       include: "scope"
-    # Evita alterar o manifesto quando o range atual já admite a release;
-    # o lockfile avança sem dessincronizar o inventário legal exato.
-    versioning-strategy: increase-if-necessary
+    versioning-strategy: increase
     ignore:
-      # typescript-eslint 8.66.0 supports TypeScript only below 6.1.0.
+      # typescript-eslint supports TypeScript only below 6.1.0.
+      # https://typescript-eslint.io/users/dependency-versions/
       - dependency-name: "typescript"
         versions:
           - ">=6.1.0"
     groups:
-      react:
+      minor-e-patch:
+        applies-to: version-updates
         patterns:
-          - "react"
-          - "react-dom"
+          - "*"
         update-types:
-          - "major"
-          - "minor"
-          - "patch"
-      dev-dependencies:
-        patterns:
-          - "eslint*"
-          - "typescript"
-          - "@types/*"
-          - "wrangler"
-          - "@cloudflare/*"
-          - "vite*"
-          - "@vitest/*"
-          - "@biomejs/*"
-        update-types:
-          - "major"
           - "minor"
           - "patch"
     open-pull-requests-limit: 10
-
-  # O gate legal usa o Licensee pelo Bundler. A manutencao dessa dependencia
-  # fica no proprio repositorio pela integracao nativa do Dependabot.
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "01:00"
-      timezone: "America/Los_Angeles"
-    cooldown:
-      default-days: 7
-    labels:
-      - "dependencies"
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    open-pull-requests-limit: 5

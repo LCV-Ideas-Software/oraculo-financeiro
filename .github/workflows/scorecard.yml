@@ -1,4 +1,4 @@
-name: Scorecard analysis workflow
+name: Scorecard supply-chain security
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   schedule:
     - cron: "37 8 * * 1"
 
-permissions: read-all
+permissions: {}
 
 concurrency:
   group: scorecard-${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      security-events: write # Upload Scorecard results to code scanning.
+      actions: read # Read workflow metadata.
+      checks: read # Discover configured security checks.
+      contents: read # Analyze repository history and configuration.
+      issues: read # Read security-policy issue metadata.
+      pull-requests: read # Inspect repository contribution practices.
+      security-events: write # Upload SARIF to code scanning.
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,8 +36,6 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          # OpenSSF's optional public-results service does not support GitHub
-          # Enterprise repositories. SARIF publication below remains enabled.
           publish_results: false
 
       - name: Upload Scorecard artifact
