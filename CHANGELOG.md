@@ -1,5 +1,13 @@
 # Changelog — Oráculo Financeiro
 
+## [Unreleased]
+
+### Changed
+
+- Atualiza a dependência transitiva de desenvolvimento `sharp` para 0.35.4
+  pelo override nativo do npm, preservando a versão do Wrangler, as dependências
+  de produção e a versão interna da aplicação.
+
 ## [v01.11.04] - 08/09/2026
 
 ### Added

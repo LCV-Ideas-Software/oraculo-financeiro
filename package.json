@@ -58,6 +58,7 @@
   },
   "overrides": {
     "picomatch": "4.0.4",
+    "sharp": "0.35.4",
     "vite": "$vite",
     "@babel/core": "7.29.6",
     "ws": "8.21.0"
