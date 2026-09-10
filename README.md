@@ -159,8 +159,9 @@ directory, with a read-only artifact build on PRs and deployment only from
 `main`. CodeQL uses GitHub Default Setup; Dependency Review, Zizmor and
 Scorecard use their official actions.
 
-Dependabot checks weekly on Monday at 06:00 America/Sao_Paulo, groups minor and
-patch version updates, and submits major updates separately. GitHub native
+Dependabot checks every day, including weekends, at 05:00 (UTC-03:00), using the
+native `cron` schedule and `Etc/GMT+3`. It groups minor and patch version updates,
+submits major updates separately, and groups security fixes independently. GitHub native
 auto-merge is armed for its same-repository PRs, including separate major
 updates; grouping is not an eligibility restriction. The rollout requires the
 four native checks (`CI`, `Build Pages artifact`, `Dependency Review`,
