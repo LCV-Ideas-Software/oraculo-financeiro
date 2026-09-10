@@ -30,31 +30,31 @@
     "format:public:check": "prettier --check \"**/index.html\""
   },
   "dependencies": {
-    "lucide-react": "^1.39.0",
+    "lucide-react": "^1.40.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sanitize-html": "^2.17.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.8",
+    "@biomejs/biome": "^2.5.12",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react-dom": "^19.2.7",
     "@types/sanitize-html": "^2.16.1",
     "@vitejs/plugin-react": "^6.0.5",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.4",
+    "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
-    "happy-dom": "^20.11.6",
+    "happy-dom": "^20.13.2",
     "prettier": "^3.9.6",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.67.0",
     "vite": "^8.2.1",
     "vitest": "^4.1.10",
-    "wrangler": "4.128.0"
+    "wrangler": "4.129.0"
   },
   "overrides": {
     "picomatch": "4.0.4",
