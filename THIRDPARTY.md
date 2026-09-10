@@ -4,7 +4,7 @@
 |------------|--------|------------------|-------------|----------------|
 | @biomejs/biome | ^2.5.8 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
-| @types/node | ^26.2.0 | MIT | Não | https://registry.npmjs.org/@types/node |
+| @types/node | ^26.4.1 | MIT | Não | https://registry.npmjs.org/@types/node |
 | @types/react | ^19.2.18 | MIT | Não | https://registry.npmjs.org/@types/react |
 | @types/react-dom | ^19.2.4 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
 | @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
@@ -13,9 +13,9 @@
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
 | eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks |
 | eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
-| globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals |
+| globals | ^17.12.0 | MIT | Não | https://registry.npmjs.org/globals |
 | happy-dom | ^20.11.6 | MIT | Não | https://registry.npmjs.org/happy-dom |
-| lucide-react | ^1.31.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
+| lucide-react | ^1.39.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
@@ -24,7 +24,7 @@
 | typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^4.1.10 | MIT | Não | https://registry.npmjs.org/vitest |
-| wrangler | 4.127.1 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
+| wrangler | 4.128.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Eleição de licença em expressões OR
 

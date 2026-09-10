@@ -60,7 +60,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
-          wranglerVersion: 4.127.1
+          wranglerVersion: 4.128.0
           workingDirectory: .
           command: pages deploy dist --project-name=oraculo-financeiro --branch=main --commit-dirty=true
 
@@ -70,6 +70,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
-          wranglerVersion: 4.127.1
+          wranglerVersion: 4.128.0
           workingDirectory: .
           command: deploy --strict --config workers/taxaipca-motor/wrangler.json
