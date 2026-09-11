@@ -312,7 +312,7 @@ SOFTWARE.
 
 ==============================================================================
 
-lucide-react 1.39.0
+lucide-react 1.40.0
 Escopo: navegador
 Licenca declarada: ISC
 Licencas adicionais preservadas no arquivo agregado: MIT

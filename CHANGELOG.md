@@ -5,11 +5,13 @@
 ### Changed
 
 - Atualiza as actions oficiais do CodeQL para 4.38.0 e do Zizmor para 0.6.4,
-  com SHAs completos, e alinha os dois deploys ao Wrangler 4.128.0 já declarado.
-- Atualiza as versões de `@types/node`, `globals`, `lucide-react` e `wrangler`
-  no inventário de terceiros e na cópia pública conforme o manifesto atual.
+  com SHAs completos, e alinha os dois deploys ao Wrangler 4.129.0 já declarado.
+- Atualiza as versões de `@biomejs/biome`, `@types/node`, `@types/react-dom`,
+  `eslint-plugin-react-refresh`, `globals`, `happy-dom`, `lucide-react`, `vitest`
+  e `wrangler` no inventário de terceiros e na cópia pública conforme o manifesto
+  atual, incluindo Wrangler 4.129.0.
 - Alinha o cabeçalho de `lucide-react` nos avisos integrais e na cópia pública
-  à versão 1.39.0 distribuída, após confirmar que os textos de licença coincidem.
+  à versão 1.40.0 distribuída, após confirmar que os textos de licença coincidem.
 
 - Atualiza a dependência transitiva de desenvolvimento `sharp` para 0.35.4
   pelo override nativo do npm, preservando a versão do Wrangler, as dependências
