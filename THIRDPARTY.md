@@ -9,13 +9,13 @@
 | @types/react-dom | ^19.2.7 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
 | @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
 | @vitejs/plugin-react | ^6.0.5 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react |
-| eslint | ^10.8.1 | MIT | Não | https://registry.npmjs.org/eslint |
+| eslint | ^10.10.0 | MIT | Não | https://registry.npmjs.org/eslint |
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
 | eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks |
 | eslint-plugin-react-refresh | ^0.5.6 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
 | globals | ^17.12.0 | MIT | Não | https://registry.npmjs.org/globals |
 | happy-dom | ^20.14.0 | MIT | Não | https://registry.npmjs.org/happy-dom |
-| lucide-react | ^1.40.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
+| lucide-react | ^1.41.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
 | prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
