@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Os dois passos de deploy da Cloudflare Wrangler Action (Pages e Cron Worker)
+  deixam de pinar `wranglerVersion` e passam a usar o Wrangler que `npm ci`
+  instala a partir do lockfile, hoje 4.130.0; o pin manual ficava para trás a
+  cada atualização do Dependabot. O inventário de terceiros e a cópia pública
+  acompanham o manifesto (ORAFINC-23 / #316, GIT-230).
 - Atualiza as actions oficiais do CodeQL para 4.38.0 e do Zizmor para 0.6.4,
   com SHAs completos, e alinha os dois deploys ao Wrangler 4.129.0 já declarado.
 - Atualiza as versões de `@biomejs/biome`, `@types/node`, `@types/react-dom`, `eslint`,
