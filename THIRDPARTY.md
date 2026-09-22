@@ -24,7 +24,7 @@
 | typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^5.0.0 | MIT | Não | https://registry.npmjs.org/vitest |
-| wrangler | 4.130.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
+| wrangler | 4.136.2 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Eleição de licença em expressões OR
 
