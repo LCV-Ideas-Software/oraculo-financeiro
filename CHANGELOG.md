@@ -6,21 +6,22 @@
 
 - Os dois passos de deploy da Cloudflare Wrangler Action (Pages e Cron Worker)
   deixam de pinar `wranglerVersion` e passam a usar o Wrangler que `npm ci`
-  instala a partir do lockfile, hoje 4.130.0; o pin manual ficava para trás a
+  instala a partir do lockfile; o pin manual ficava para trás a
   cada atualização do Dependabot. O inventário de terceiros e a cópia pública
   acompanham o manifesto (ORAFINC-23 / #316, GIT-230).
 - Atualiza as actions oficiais do CodeQL para 4.38.0 e do Zizmor para 0.6.4,
-  com SHAs completos, e alinha os dois deploys ao Wrangler 4.129.0 já declarado.
+  com SHAs completos.
 - Atualiza as versões de `@biomejs/biome`, `@types/node`, `@types/react-dom`, `eslint`,
   `eslint-plugin-react-refresh`, `globals`, `happy-dom`, `lucide-react`, `vitest`
   e `wrangler` no inventário de terceiros e na cópia pública conforme o manifesto
-  atual, incluindo ESLint 10.10.0, Lucide React 1.41.0 e Wrangler 4.129.0.
+  atual, incluindo ESLint 10.10.0 e Lucide React 1.41.0.
 - Alinha o cabeçalho de `lucide-react` nos avisos integrais e na cópia pública
   à versão 1.41.0 do lockfile, após confirmar que os textos de licença coincidem.
 
-- Atualiza a dependência transitiva de desenvolvimento `sharp` para 0.35.4
-  pelo override nativo do npm, preservando a versão do Wrangler, as dependências
-  de produção e a versão interna da aplicação.
+- Atualiza o Wrangler para `4.136.2`, com pin exato, lockfile regenerado pelo
+  npm e as duas cópias de THIRDPARTY sincronizadas. Remove o override redundante
+  de Sharp: o Miniflare já exige `0.35.4` diretamente, preservando a correção
+  anterior dessa dependência de desenvolvimento e a versão interna da aplicação.
 
 ## [v01.11.04] - 08/09/2026
 
