@@ -18,7 +18,7 @@
 - Alinha o cabeçalho de `lucide-react` nos avisos integrais e na cópia pública
   à versão 1.41.0 do lockfile, após confirmar que os textos de licença coincidem.
 
-- Atualiza o Wrangler para `4.136.2`, com pin exato, lockfile regenerado pelo
+- Atualiza o Wrangler para `4.137.0`, com pin exato, lockfile regenerado pelo
   npm e as duas cópias de THIRDPARTY sincronizadas. Remove o override redundante
   de Sharp: o Miniflare já exige `0.35.4` diretamente, preservando a correção
   anterior dessa dependência de desenvolvimento e a versão interna da aplicação.
