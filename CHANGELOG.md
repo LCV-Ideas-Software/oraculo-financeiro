@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Atualiza o pin exato do Wrangler para `4.142.0`, regenera o lockfile com npm
+  e alinha as cópias do inventário de terceiros (ORAFINC-25, LCV-239).
+
 - Os dois passos de deploy da Cloudflare Wrangler Action (Pages e Cron Worker)
   deixam de pinar `wranglerVersion` e passam a usar o Wrangler que `npm ci`
   instala a partir do lockfile; o pin manual ficava para trás a
