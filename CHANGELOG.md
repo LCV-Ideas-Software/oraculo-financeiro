@@ -4,8 +4,9 @@
 
 ### Changed
 
-- Aplica temporariamente o override nativo do npm para Undici 7.29.1 somente
-  sob Miniflare e regenera o lockfile enquanto o upstream fixa 7.29.0
+- Aplica temporariamente o override nativo do npm para `undici@7.29.0`
+  sob Miniflare, resolvendo 7.29.1, e regenera o lockfile enquanto o upstream
+  fixa 7.29.0
   (LCV-241). A dependência é de desenvolvimento; os artefatos publicados não
   incorporam essa alteração.
 
