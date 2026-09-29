@@ -7,8 +7,8 @@
 - Atualiza o pin da Cloudflare Wrangler Action oficial para v4.1.2 depois que
   a tag v4.1.1 omitiu o entrypoint compilado `dist/index.mjs` (LCV-241).
 
-- Atualiza o pin exato do Wrangler para `4.142.0`, regenera o lockfile com npm
-  e alinha as cópias do inventário de terceiros (ORAFINC-25, LCV-239).
+- Atualiza o pin exato do Wrangler para `4.143.0`, regenera o lockfile com npm
+  e alinha as cópias do inventário de terceiros (ORAFINC-25, LCV-239, LCV-241).
 
 - Os dois passos de deploy da Cloudflare Wrangler Action (Pages e Cron Worker)
   deixam de pinar `wranglerVersion` e passam a usar o Wrangler que `npm ci`
