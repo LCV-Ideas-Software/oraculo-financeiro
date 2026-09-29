@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Aplica temporariamente o override nativo do npm para Undici 7.29.1 somente
+  sob Miniflare e regenera o lockfile enquanto o upstream fixa 7.29.0
+  (LCV-241). A dependência é de desenvolvimento; os artefatos publicados não
+  incorporam essa alteração.
+
 - Atualiza o pin da Cloudflare Wrangler Action oficial para v4.1.2 depois que
   a tag v4.1.1 omitiu o entrypoint compilado `dist/index.mjs` (LCV-241).
 
