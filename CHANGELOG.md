@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Atualiza `brace-expansion` de 5.0.9 para 5.0.12 no lockfile npm,
+  removendo o alerta de alta severidade que bloqueava o Deploy em `main`.
+
 - Aplica temporariamente o override nativo do npm para `undici@7.29.0`
   sob Miniflare, resolvendo 7.29.1, e regenera o lockfile enquanto o upstream
   fixa 7.29.0
