@@ -2,16 +2,17 @@
 
 ## [Unreleased]
 
+- Update the pinned Cloudflare Wrangler CLI to 4.145.0 and regenerate npm dependency locks.
+
 ### Changed
 
 - Atualiza `brace-expansion` de 5.0.9 para 5.0.12 no lockfile npm,
   removendo o alerta de alta severidade que bloqueava o Deploy em `main`.
 
-- Aplica temporariamente o override nativo do npm para `undici@7.29.0`
-  sob Miniflare, resolvendo 7.29.1, e regenera o lockfile enquanto o upstream
-  fixa 7.29.0
-  (LCV-241). A dependência é de desenvolvimento; os artefatos publicados não
-  incorporam essa alteração.
+- Remove o override temporário de `undici@7.29.0` sob Miniflare introduzido
+  em LCV-241: o Wrangler 4.145.0 agora seleciona o Miniflare oficial que exige
+  diretamente Undici 7.29.1. A exceção deixou de ser necessária (LCV-256).
+  A dependência é de desenvolvimento; os artefatos publicados não a incorporam.
 
 - Atualiza o pin da Cloudflare Wrangler Action oficial para v4.1.2 depois que
   a tag v4.1.1 omitiu o entrypoint compilado `dist/index.mjs` (LCV-241).
