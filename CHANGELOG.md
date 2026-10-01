@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **LCV-256 / LCV-211:** Reconcile the static browser/Functions notices and
+  their public copy with the installed npm lock. Preserve exact vendor license
+  texts, the Launder provenance evidence and all declared distribution scopes;
+  refresh the maintained inventory ranges after native dependency updates.
+- **LCV-256 review:** Resolve the Pages Functions dependency subtree with
+  `npm ls --omit=dev --all --long --json`; retain the nested sanitize-html
+  production packages and their complete vendor texts, independently of the
+  development-only type packages at node_modules root.
+
 - Update the pinned Cloudflare Wrangler CLI to 4.145.0 and regenerate npm dependency locks.
 
 ### Changed

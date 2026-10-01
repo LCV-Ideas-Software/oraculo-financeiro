@@ -2,28 +2,28 @@
 
 | Componente | Versão | Licença Original | Modificado? | Link de Origem |
 |------------|--------|------------------|-------------|----------------|
-| @biomejs/biome | ^2.5.12 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
+| @biomejs/biome | ^2.5.14 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
-| @types/node | ^26.4.1 | MIT | Não | https://registry.npmjs.org/@types/node |
-| @types/react | ^19.2.18 | MIT | Não | https://registry.npmjs.org/@types/react |
-| @types/react-dom | ^19.2.7 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
+| @types/node | ^26.6.2 | MIT | Não | https://registry.npmjs.org/@types/node |
+| @types/react | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react |
+| @types/react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
 | @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
 | @vitejs/plugin-react | ^6.0.5 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react |
-| eslint | ^10.10.0 | MIT | Não | https://registry.npmjs.org/eslint |
+| eslint | ^10.11.0 | MIT | Não | https://registry.npmjs.org/eslint |
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
 | eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks |
-| eslint-plugin-react-refresh | ^0.5.6 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
+| eslint-plugin-react-refresh | ^0.5.7 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
 | globals | ^17.12.0 | MIT | Não | https://registry.npmjs.org/globals |
-| happy-dom | ^20.14.0 | MIT | Não | https://registry.npmjs.org/happy-dom |
-| lucide-react | ^1.41.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
-| prettier | ^3.9.6 | MIT | Não | https://registry.npmjs.org/prettier |
-| react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react |
-| react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom |
+| happy-dom | ^20.14.5 | MIT | Não | https://registry.npmjs.org/happy-dom |
+| lucide-react | ^1.48.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
+| prettier | ^3.9.9 | MIT | Não | https://registry.npmjs.org/prettier |
+| react | ^19.3.0 | MIT | Não | https://registry.npmjs.org/react |
+| react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
-| typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
-| vite | ^8.2.1 | MIT | Não | https://registry.npmjs.org/vite |
-| vitest | ^5.0.0 | MIT | Não | https://registry.npmjs.org/vitest |
+| typescript-eslint | ^8.70.1 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
+| vite | ^8.3.0 | MIT | Não | https://registry.npmjs.org/vite |
+| vitest | ^5.0.1 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.145.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Eleição de licença em expressões OR
