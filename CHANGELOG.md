@@ -13,7 +13,7 @@
   production packages and their complete vendor texts, independently of the
   development-only type packages at node_modules root.
 
-- Update the pinned Cloudflare Wrangler CLI to 4.145.0 and regenerate npm dependency locks.
+- Update the pinned Cloudflare Wrangler CLI to 4.147.0 and regenerate npm dependency locks.
 
 ### Changed
 
@@ -21,7 +21,7 @@
   removendo o alerta de alta severidade que bloqueava o Deploy em `main`.
 
 - Remove o override temporário de `undici@7.29.0` sob Miniflare introduzido
-  em LCV-241: o Wrangler 4.145.0 agora seleciona o Miniflare oficial que exige
+  em LCV-241: o Wrangler 4.147.0 agora seleciona o Miniflare oficial que exige
   diretamente Undici 7.29.1. A exceção deixou de ser necessária (LCV-256).
   A dependência é de desenvolvimento; os artefatos publicados não a incorporam.
 
