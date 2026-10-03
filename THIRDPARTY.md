@@ -60,8 +60,9 @@ A referência a `scripts/generate-notices.mjs` no cabeçalho dos avisos integrai
 os verificadores customizados e seu ferramental Ruby/Licensee foram aposentados:
 não há geração a cada publicação nem verificação automática contínua de
 inventário, texto ou artefato. O fragmento estático
-`scripts/legal/launder-mit.txt` contém agora os bytes do `LICENSE.md` publicado
-pelo titular em `launder` 1.7.2, com a integridade do tarball oficial conferida.
+`scripts/legal/launder-mit.txt` contém o texto integral verbatim do `LICENSE.md`
+publicado pelo titular em `launder` 1.7.2, seguido de um bloco separado com
+versão, escopo, tarball, SRI, commit declarado e SHA-256 do texto conferido.
 Os avisos integrais e sua cópia pública foram atualizados para essa versão;
 não se estende essa prova retrospectivamente a `launder` 1.7.1.
 

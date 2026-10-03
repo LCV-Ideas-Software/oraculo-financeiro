@@ -9,8 +9,8 @@ Componentes cobertos: 22
   servidos ao navegador ...........: 5
   Pages Functions (servidor) ......: 17
   nos dois .......................: 0
-  texto do pacote instalado: 21
-  texto vendorizado ........: 1
+  texto do pacote instalado: 22
+  texto vendorizado ........: 0
 
 Dependencias de desenvolvimento nao constam, por nao serem servidas ao
 usuario, com uma excecao declarada: ferramenta de build que injeta codigo
