@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Alinhadas as datas de compatibilidade das Pages Functions e do Worker `taxaipca-motor` para `2026-10-03`, preservando bindings e demais configurações Cloudflare.
+
 - Atualizado o Vitest para 5.0.3, que seleciona o `why-is-node-running` oficial 3.2.1 sem `stackback`; manifestos e lockfiles regenerados pelo npm. Atualizado `launder` para 1.7.2, com licença MIT integral publicada pelo titular.
 
 ### Fixed
