@@ -22,8 +22,8 @@
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.70.1 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
-| vite | ^8.3.0 | MIT | Não | https://registry.npmjs.org/vite |
-| vitest | ^5.0.1 | MIT | Não | https://registry.npmjs.org/vitest |
+| vite | ^8.3.1 | MIT | Não | https://registry.npmjs.org/vite |
+| vitest | ^5.0.3 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.147.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Eleição de licença em expressões OR
@@ -60,6 +60,12 @@ A referência a `scripts/generate-notices.mjs` no cabeçalho dos avisos integrai
 os verificadores customizados e seu ferramental Ruby/Licensee foram aposentados:
 não há geração a cada publicação nem verificação automática contínua de
 inventário, texto ou artefato. O fragmento estático
-`scripts/legal/launder-mit.txt` permanece como evidência de proveniência do texto
-vendorizado já registrado para `launder` 1.7.1; sua preservação não constitui
-uma nova decisão de licença.
+`scripts/legal/launder-mit.txt` contém o texto integral verbatim do `LICENSE.md`
+publicado pelo titular em `launder` 1.7.2, seguido de um bloco separado com
+versão, escopo, tarball, SRI, commit declarado e SHA-256 do texto conferido.
+Os avisos integrais e sua cópia pública foram atualizados para essa versão;
+não se estende essa prova retrospectivamente a `launder` 1.7.1.
+
+## Atualização documental — 02/10/2026 (LCV-183 / LCV-211)
+
+O Vitest 5.0.3 seleciona `why-is-node-running` 3.2.1, cuja publicação oficial não depende de `stackback`. A árvore exata permanece nos lockfiles regenerados pelo npm. Fonte: https://github.com/vitest-dev/vitest/pull/11316 e https://github.com/vitest-dev/vitest/releases/tag/v5.0.3. Esta atualização de ferramenta de teste não afirma incorporação no produto distribuído.

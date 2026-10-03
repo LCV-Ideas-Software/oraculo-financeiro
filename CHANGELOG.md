@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Atualizado o Vitest para 5.0.3, que seleciona o `why-is-node-running` oficial 3.2.1 sem `stackback`; manifestos e lockfiles regenerados pelo npm. Atualizado `launder` para 1.7.2, com licença MIT integral publicada pelo titular.
+
 ### Fixed
 
 - **LCV-256 / LCV-211:** Reconcile the static browser/Functions notices and
