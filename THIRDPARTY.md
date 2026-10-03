@@ -22,8 +22,8 @@
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.70.1 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
-| vite | ^8.3.0 | MIT | Não | https://registry.npmjs.org/vite |
-| vitest | ^5.0.1 | MIT | Não | https://registry.npmjs.org/vitest |
+| vite | ^8.3.1 | MIT | Não | https://registry.npmjs.org/vite |
+| vitest | ^5.0.3 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.147.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Eleição de licença em expressões OR
@@ -60,9 +60,10 @@ A referência a `scripts/generate-notices.mjs` no cabeçalho dos avisos integrai
 os verificadores customizados e seu ferramental Ruby/Licensee foram aposentados:
 não há geração a cada publicação nem verificação automática contínua de
 inventário, texto ou artefato. O fragmento estático
-`scripts/legal/launder-mit.txt` permanece como evidência de proveniência do texto
-vendorizado já registrado para `launder` 1.7.1; sua preservação não constitui
-uma nova decisão de licença.
+`scripts/legal/launder-mit.txt` contém agora os bytes do `LICENSE.md` publicado
+pelo titular em `launder` 1.7.2, com a integridade do tarball oficial conferida.
+Os avisos integrais e sua cópia pública foram atualizados para essa versão;
+não se estende essa prova retrospectivamente a `launder` 1.7.1.
 
 ## Atualização documental — 02/10/2026 (LCV-183 / LCV-211)
 
