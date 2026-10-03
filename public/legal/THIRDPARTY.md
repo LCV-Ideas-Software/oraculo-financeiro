@@ -63,3 +63,7 @@ inventário, texto ou artefato. O fragmento estático
 `scripts/legal/launder-mit.txt` permanece como evidência de proveniência do texto
 vendorizado já registrado para `launder` 1.7.1; sua preservação não constitui
 uma nova decisão de licença.
+
+## Atualização documental — 02/10/2026 (LCV-183 / LCV-211)
+
+O Vitest 5.0.3 seleciona `why-is-node-running` 3.2.1, cuja publicação oficial não depende de `stackback`. A árvore exata permanece nos lockfiles regenerados pelo npm. Fonte: https://github.com/vitest-dev/vitest/pull/11316 e https://github.com/vitest-dev/vitest/releases/tag/v5.0.3. Esta atualização de ferramenta de teste não afirma incorporação no produto distribuído.
