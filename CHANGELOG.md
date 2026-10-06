@@ -8,6 +8,12 @@
 
 ### Fixed
 
+- Atualizada a Action oficial Linear Release para v0.18.1 por SHA completo, com a CLI oficial v0.18.0 selecionada explicitamente e a verificação de checksum preservada.
+
+- Aplicado o override npm temporário e autorizado de `sharp@0.35.5` sob Miniflare, corrigindo a vulnerabilidade de librsvg que afetava o Wrangler oficial enquanto o upstream mantém o pin anterior (LCV-316).
+
+- Atualizado `source-map-js` para 1.2.2 pelo npm, corrigindo o alerta de alta severidade que interrompia o Deploy. Os avisos integrais e sua cópia pública preservam o texto BSD-3-Clause do pacote corrigido; o inventário direto acompanha os intervalos vigentes.
+
 - **LCV-256 / LCV-211:** Reconcile the static browser/Functions notices and
   their public copy with the installed npm lock. Preserve exact vendor license
   texts, the Launder provenance evidence and all declared distribution scopes;

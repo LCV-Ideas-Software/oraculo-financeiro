@@ -4,10 +4,10 @@
 |------------|--------|------------------|-------------|----------------|
 | @biomejs/biome | ^2.5.14 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
-| @types/node | ^26.6.2 | MIT | Não | https://registry.npmjs.org/@types/node |
+| @types/node | ^26.6.3 | MIT | Não | https://registry.npmjs.org/@types/node |
 | @types/react | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react |
 | @types/react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
-| @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
+| @types/sanitize-html | ^2.16.2 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
 | @vitejs/plugin-react | ^6.0.5 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react |
 | eslint | ^10.11.0 | MIT | Não | https://registry.npmjs.org/eslint |
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
@@ -21,10 +21,18 @@
 | react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/react-dom |
 | sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
-| typescript-eslint | ^8.70.1 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
+| typescript-eslint | ^8.71.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.3.1 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^5.0.3 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.147.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
+
+## Exceção temporária de segurança (LCV-316)
+
+O operador autorizou o override npm `miniflare` → `sharp@0.35.5` para corrigir GHSA-wq5f-xc86-pv6w. O Wrangler oficial 4.147.0 seleciona Miniflare 5.20261001.0-alpha, que ainda exige Sharp 0.35.4. O override usa o pacote oficial do titular e deve ser removido quando a versão oficial selecionada incorporar Sharp 0.35.5 ou superior. Sharp e seus binários opcionais pertencem ao ferramental de desenvolvimento; os avisos das Pages Functions continuam cobrindo suas dependências distribuídas.
+
+## Automação oficial de releases
+
+Linear Release usa a Action oficial v0.18.1 (`30f9ae77461ec29f07fffe0c52edd1909bfbb6f5`) e a CLI oficial v0.18.0, ambas do titular Linear. A Action verifica o executável da CLI contra os checksums publicados pelo upstream; esse ferramental opera somente após o Deploy bem-sucedido e não compõe os artefatos distribuídos da aplicação.
 
 ## Eleição de licença em expressões OR
 

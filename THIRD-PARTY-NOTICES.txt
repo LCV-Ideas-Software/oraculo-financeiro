@@ -548,7 +548,7 @@ SOFTWARE.
 
 ==============================================================================
 
-source-map-js 1.2.1
+source-map-js 1.2.2
 Escopo: Pages Functions (servidor)
 Licenca declarada: BSD-3-Clause
 
