@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
+
+- Update the official `actions/upload-artifact` to v7.0.2 at complete commit SHAs (LCV-334).
+
 - Alinhadas as datas de compatibilidade das Pages Functions e do Worker `taxaipca-motor` para `2026-10-03`, preservando bindings e demais configurações Cloudflare.
 
 - Atualizado o Vitest para 5.0.3, que seleciona o `why-is-node-running` oficial 3.2.1 sem `stackback`; manifestos e lockfiles regenerados pelo npm. Atualizado `launder` para 1.7.2, com licença MIT integral publicada pelo titular.
