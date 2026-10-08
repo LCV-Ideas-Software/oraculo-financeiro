@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Update the official CodeQL SARIF upload Action to v4.38.3 at its complete release commit SHA (LCV-336).
+
 - Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
 
 - Update the official `actions/upload-artifact` to v7.0.2 at complete commit SHAs (LCV-334).
@@ -50,7 +52,7 @@
   instala a partir do lockfile; o pin manual ficava para trás a
   cada atualização do Dependabot. O inventário de terceiros e a cópia pública
   acompanham o manifesto (ORAFINC-23 / #316, GIT-230).
-- Atualiza as actions oficiais do CodeQL para 4.38.0 e do Zizmor para 0.6.4,
+- Atualiza as actions oficiais do CodeQL para 4.38.3 e do Zizmor para 0.6.4,
   com SHAs completos.
 - Atualiza as versões de `@biomejs/biome`, `@types/node`, `@types/react-dom`, `eslint`,
   `eslint-plugin-react-refresh`, `globals`, `happy-dom`, `lucide-react`, `vitest`
