@@ -54,15 +54,12 @@
     "typescript-eslint": "^8.71.0",
     "vite": "^8.3.2",
     "vitest": "^5.0.3",
-    "wrangler": "4.148.0"
+    "wrangler": "4.149.0"
   },
   "overrides": {
     "picomatch": "4.0.4",
     "vite": "$vite",
     "@babel/core": "7.29.6",
-    "ws": "8.21.0",
-    "miniflare": {
-      "sharp": "0.35.5"
-    }
+    "ws": "8.21.0"
   }
 }
