@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Reconcile six current direct dependency version rows in THIRDPARTY.md and its served legal copy with the unchanged manifest and native lockfile (LCV-341).
+
 - Atualizada a CLI oficial Cloudflare Wrangler para 4.149.0, com lockfiles regenerados pelo npm. O Miniflare oficial 5.20261006.1-alpha exige Sharp 0.35.5 diretamente; retirado o override temporário de Sharp dos manifestos que usam apenas esse upstream estável (LCV-341).
 
 - Update the official CodeQL SARIF upload Action to v4.38.3 at its complete release commit SHA (LCV-336).

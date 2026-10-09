@@ -2,9 +2,9 @@
 
 | Componente | Versão | Licença Original | Modificado? | Link de Origem |
 |------------|--------|------------------|-------------|----------------|
-| @biomejs/biome | ^2.5.14 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
+| @biomejs/biome | ^2.5.15 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome |
 | @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js |
-| @types/node | ^26.6.3 | MIT | Não | https://registry.npmjs.org/@types/node |
+| @types/node | ^26.6.4 | MIT | Não | https://registry.npmjs.org/@types/node |
 | @types/react | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react |
 | @types/react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/@types/react-dom |
 | @types/sanitize-html | ^2.16.2 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html |
@@ -13,16 +13,16 @@
 | eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier |
 | eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks |
 | eslint-plugin-react-refresh | ^0.5.7 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh |
-| globals | ^17.12.0 | MIT | Não | https://registry.npmjs.org/globals |
+| globals | ^17.13.0 | MIT | Não | https://registry.npmjs.org/globals |
 | happy-dom | ^20.14.5 | MIT | Não | https://registry.npmjs.org/happy-dom |
-| lucide-react | ^1.48.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
+| lucide-react | ^1.49.0 | ISC | Não | https://registry.npmjs.org/lucide-react |
 | prettier | ^3.9.9 | MIT | Não | https://registry.npmjs.org/prettier |
 | react | ^19.3.0 | MIT | Não | https://registry.npmjs.org/react |
 | react-dom | ^19.3.0 | MIT | Não | https://registry.npmjs.org/react-dom |
-| sanitize-html | ^2.17.6 | MIT | Não | https://registry.npmjs.org/sanitize-html |
+| sanitize-html | ^2.18.0 | MIT | Não | https://registry.npmjs.org/sanitize-html |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript |
 | typescript-eslint | ^8.71.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
-| vite | ^8.3.1 | MIT | Não | https://registry.npmjs.org/vite |
+| vite | ^8.3.2 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^5.0.3 | MIT | Não | https://registry.npmjs.org/vitest |
 | wrangler | 4.149.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
