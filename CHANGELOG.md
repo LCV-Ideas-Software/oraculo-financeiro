@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
+- Atualizada a CLI oficial Cloudflare Wrangler para 4.149.0, com lockfiles regenerados pelo npm. O Miniflare oficial 5.20261006.1-alpha exige Sharp 0.35.5 diretamente; retirado o override temporário de Sharp dos manifestos que usam apenas esse upstream estável (LCV-341).
+
 - Update the official CodeQL SARIF upload Action to v4.38.3 at its complete release commit SHA (LCV-336).
 
-- Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
+- Na atualização LCV-334, a CLI oficial Cloudflare Wrangler passou a 4.148.0, com lockfiles regenerados pelo npm. Naquela versão, o Miniflare oficial 5.20261006.0-alpha exigia Sharp 0.35.4 e justificava o override autorizado de Sharp 0.35.5; o upstream estável corrigido em 4.149.0 permite retirar esse override na LCV-341.
 
 - Update the official `actions/upload-artifact` to v7.0.2 at complete commit SHAs (LCV-334).
 

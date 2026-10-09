@@ -24,11 +24,11 @@
 | typescript-eslint | ^8.71.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint |
 | vite | ^8.3.1 | MIT | Não | https://registry.npmjs.org/vite |
 | vitest | ^5.0.3 | MIT | Não | https://registry.npmjs.org/vitest |
-| wrangler | 4.148.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
+| wrangler | 4.149.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler |
 
 ## Exceção temporária de segurança (LCV-316)
 
-O operador autorizou o override npm `miniflare` → `sharp@0.35.5` para corrigir GHSA-wq5f-xc86-pv6w. O Wrangler oficial 4.148.0 seleciona Miniflare 5.20261006.0-alpha, que ainda exige Sharp 0.35.4. O override usa o pacote oficial do titular e deve ser removido quando a versão oficial selecionada incorporar Sharp 0.35.5 ou superior. Sharp e seus binários opcionais pertencem ao ferramental de desenvolvimento; os avisos das Pages Functions continuam cobrindo suas dependências distribuídas.
+O operador autorizou o override npm temporário `miniflare` → `sharp@0.35.5` para corrigir GHSA-wq5f-xc86-pv6w (LCV-316). O Wrangler oficial 4.149.0 agora seleciona Miniflare 5.20261006.1-alpha, que exige Sharp 0.35.5 diretamente. O override foi retirado, e o npm regenera o lockfile usando as faixas oficiais do upstream (LCV-341). Sharp e seus binários opcionais pertencem ao ferramental de desenvolvimento; os avisos das Pages Functions continuam cobrindo suas dependências distribuídas.
 
 ## Automação oficial de releases
 
